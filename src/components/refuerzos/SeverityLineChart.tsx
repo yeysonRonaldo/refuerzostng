@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useAppContext } from '@/context/AppContext';
-import { TimelineEntry } from '@/types/refuerzos';
 
 export default function SeverityLineChart() {
   const { metrics, handleDrillDown } = useAppContext();
