@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDocs,
+  getDocsFromCache,
   writeBatch,
   query,
 } from 'firebase/firestore';
