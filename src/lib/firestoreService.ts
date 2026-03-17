@@ -116,7 +116,15 @@ export async function uploadToFirestore(records: RefuerzoRecord[]): Promise<{ up
  */
 export async function loadFromFirestore(): Promise<RefuerzoRecord[]> {
   const dataCol = getDataCollection();
-  const snapshot = await getDocs(query(dataCol));
+  
+  // Try cache first for instant load, fall back to server
+  let snapshot;
+  try {
+    snapshot = await getDocsFromCache(query(dataCol));
+    if (snapshot.empty) throw new Error('cache empty');
+  } catch {
+    snapshot = await getDocs(query(dataCol));
+  }
 
   const records: RefuerzoRecord[] = [];
   dedupeKeyCache = new Set<string>();
