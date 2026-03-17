@@ -4,6 +4,9 @@ import MetricsView from '@/components/refuerzos/MetricsView';
 import AnalysisView from '@/components/refuerzos/AnalysisView';
 import DatabaseView from '@/components/refuerzos/DatabaseView';
 import UserManagement from '@/components/refuerzos/UserManagement';
+import RoutesView from '@/components/refuerzos/RoutesView';
+import ReportsView from '@/components/refuerzos/ReportsView';
+import ExportView from '@/components/refuerzos/ExportView';
 import { useAppContext } from '@/context/AppContext';
 
 export default function Index() {
@@ -17,7 +20,10 @@ export default function Index() {
         <main className="flex-1 overflow-y-auto p-5">
           {activeTab === 'metrics' && <MetricsView />}
           {activeTab === 'analysis' && <AnalysisView />}
+          {activeTab === 'routes' && <RoutesView />}
+          {activeTab === 'reports' && <ReportsView />}
           {activeTab === 'database' && <DatabaseView />}
+          {activeTab === 'export' && <ExportView />}
           {activeTab === 'users' && <UserManagement />}
         </main>
       </div>
