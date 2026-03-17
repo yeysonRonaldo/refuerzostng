@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAppContext } from '@/context/AppContext';
-import { RefuerzoRecord } from '@/types/refuerzos';
-import { Navigation, MapPin, Check } from 'lucide-react';
+import { Navigation, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function RoutesView() {
