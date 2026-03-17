@@ -134,15 +134,6 @@ export default function Sidebar() {
         )}
         <p className="text-xs text-muted-foreground">Sube Excel → se guarda en Firebase</p>
 
-        <button
-          onClick={handleLoadFromFirestore}
-          disabled={loadingFirestore}
-          className="flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md border border-border bg-card text-foreground hover:bg-accent transition-colors disabled:opacity-50"
-        >
-          {loadingFirestore ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-          Cargar desde Firebase
-        </button>
-      </div>
 
       {/* Filters */}
       {processedData.length > 0 && (
