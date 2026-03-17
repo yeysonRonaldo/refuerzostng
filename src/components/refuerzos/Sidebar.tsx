@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useAppContext } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { parseExcelFile } from '@/lib/dataProcessor';
 import { uploadToFirestore, loadFromFirestore, clearFirestoreData } from '@/lib/firestoreService';
-import { LayoutDashboard, Activity, Database, Trash2, Upload, Download, Loader2 } from 'lucide-react';
+import { LayoutDashboard, Activity, Database, Trash2, Upload, Download, Loader2, Users, LogOut } from 'lucide-react';
 import { TabName } from '@/types/refuerzos';
 import { toast } from 'sonner';
 
@@ -11,19 +12,21 @@ const MONTH_NAMES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
-const navItems: { id: TabName; label: string; icon: React.ReactNode }[] = [
-  { id: 'metrics', label: 'Métricas', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
-  { id: 'analysis', label: 'Análisis de Cambios', icon: <Activity className="w-[18px] h-[18px]" /> },
-  { id: 'database', label: 'Base de Datos', icon: <Database className="w-[18px] h-[18px]" /> },
-];
-
 export default function Sidebar() {
   const {
     processedData, activeTab, yearFilter, monthFilter,
     setProcessedData, setActiveTab, setYearFilter, setMonthFilter, resetData,
   } = useAppContext();
+  const { isAdmin, logout, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingFirestore, setLoadingFirestore] = useState(false);
+
+  const navItems: { id: TabName; label: string; icon: React.ReactNode }[] = [
+    { id: 'metrics', label: 'Métricas', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
+    { id: 'analysis', label: 'Análisis de Cambios', icon: <Activity className="w-[18px] h-[18px]" /> },
+    { id: 'database', label: 'Base de Datos', icon: <Database className="w-[18px] h-[18px]" /> },
+    ...(isAdmin ? [{ id: 'users' as TabName, label: 'Usuarios', icon: <Users className="w-[18px] h-[18px]" /> }] : []),
+  ];
 
   const years = Array.from(new Set(
     processedData
@@ -174,7 +177,12 @@ export default function Sidebar() {
       </div>
 
       {/* Reset */}
-      <div className="mt-auto">
+      <div className="mt-auto flex flex-col gap-2">
+        {/* User info */}
+        <div className="text-xs text-muted-foreground truncate px-1">
+          {user?.email}
+          {isAdmin && <span className="ml-1 text-primary font-semibold">(Admin)</span>}
+        </div>
         <button
           onClick={handleReset}
           disabled={loading}
@@ -182,6 +190,13 @@ export default function Sidebar() {
         >
           <Trash2 className="w-4 h-4" />
           Limpiar Datos
+        </button>
+        <button
+          onClick={logout}
+          className="w-full flex items-center justify-center gap-2 border border-border text-muted-foreground p-2.5 rounded-md font-medium text-sm hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Cerrar Sesión
         </button>
       </div>
     </aside>
