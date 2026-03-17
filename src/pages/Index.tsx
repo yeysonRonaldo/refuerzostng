@@ -1,16 +1,24 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import Header from '@/components/refuerzos/Header';
+import Sidebar from '@/components/refuerzos/Sidebar';
+import MetricsView from '@/components/refuerzos/MetricsView';
+import AnalysisView from '@/components/refuerzos/AnalysisView';
+import DatabaseView from '@/components/refuerzos/DatabaseView';
+import { useAppContext } from '@/context/AppContext';
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+export default function Index() {
+  const { activeTab } = useAppContext();
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="flex flex-col h-screen overflow-hidden">
+      <Header />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto p-5">
+          {activeTab === 'metrics' && <MetricsView />}
+          {activeTab === 'analysis' && <AnalysisView />}
+          {activeTab === 'database' && <DatabaseView />}
+        </main>
+      </div>
     </div>
   );
-};
-
-const Index = PlaceholderIndex;
-
-export default Index;
+}
