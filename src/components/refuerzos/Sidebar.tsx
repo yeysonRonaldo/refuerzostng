@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { parseExcelFile } from '@/lib/dataProcessor';
-import { LayoutDashboard, Activity, Database, Trash2 } from 'lucide-react';
+import { uploadToFirestore, loadFromFirestore, clearFirestoreData } from '@/lib/firestoreService';
+import { LayoutDashboard, Activity, Database, Trash2, Upload, Download, Loader2 } from 'lucide-react';
 import { TabName } from '@/types/refuerzos';
+import { toast } from 'sonner';
 
 const MONTH_NAMES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -19,6 +22,8 @@ export default function Sidebar() {
     processedData, activeTab, yearFilter, monthFilter,
     setProcessedData, setActiveTab, setYearFilter, setMonthFilter, resetData,
   } = useAppContext();
+  const [loading, setLoading] = useState(false);
+  const [loadingFirestore, setLoadingFirestore] = useState(false);
 
   const years = Array.from(new Set(
     processedData
@@ -29,11 +34,61 @@ export default function Sidebar() {
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setLoading(true);
     try {
-      const data = await parseExcelFile(file);
-      setProcessedData(data);
-    } catch {
-      alert('Error al leer archivo. Asegúrate de que sea un Excel o CSV válido.');
+      const { records, duplicatesSkipped } = await parseExcelFile(file);
+
+      // Upload to Firestore
+      toast.info(`Subiendo ${records.length} registros a Firebase...`);
+      const { uploaded, skipped } = await uploadToFirestore(records);
+
+      // Load all data from Firestore (includes previous data)
+      const allData = await loadFromFirestore();
+      setProcessedData(allData);
+
+      const totalSkipped = duplicatesSkipped + skipped;
+      toast.success(
+        `✅ ${uploaded} registros nuevos subidos. ${totalSkipped > 0 ? `${totalSkipped} duplicados omitidos.` : ''} Total en BD: ${allData.length}`
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al procesar archivo. Revisa la consola.');
+    } finally {
+      setLoading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleLoadFromFirestore = async () => {
+    setLoadingFirestore(true);
+    try {
+      const data = await loadFromFirestore();
+      if (data.length === 0) {
+        toast.info('No hay datos en Firebase. Sube un archivo Excel primero.');
+      } else {
+        setProcessedData(data);
+        toast.success(`✅ ${data.length} registros cargados desde Firebase.`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al cargar datos de Firebase.');
+    } finally {
+      setLoadingFirestore(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!confirm('¿Estás seguro? Esto eliminará TODOS los datos de Firebase.')) return;
+    setLoading(true);
+    try {
+      await clearFirestoreData();
+      resetData();
+      toast.success('Datos eliminados correctamente.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al eliminar datos.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,9 +103,24 @@ export default function Sidebar() {
           type="file"
           accept=".xlsx,.xls,.csv"
           onChange={handleFile}
-          className="text-sm w-full p-2 rounded-md border border-border bg-card"
+          disabled={loading}
+          className="text-sm w-full p-2 rounded-md border border-border bg-card disabled:opacity-50"
         />
-        <p className="text-xs text-muted-foreground">Soporta archivos grandes (12k+)</p>
+        {loading && (
+          <div className="flex items-center gap-2 text-xs text-primary">
+            <Loader2 className="w-3 h-3 animate-spin" /> Procesando y subiendo...
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">Sube Excel → se guarda en Firebase</p>
+
+        <button
+          onClick={handleLoadFromFirestore}
+          disabled={loadingFirestore}
+          className="flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md border border-border bg-card text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+        >
+          {loadingFirestore ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+          Cargar desde Firebase
+        </button>
       </div>
 
       {/* Filters */}
@@ -106,8 +176,9 @@ export default function Sidebar() {
       {/* Reset */}
       <div className="mt-auto">
         <button
-          onClick={resetData}
-          className="w-full flex items-center justify-center gap-2 bg-destructive text-destructive-foreground p-2.5 rounded-md font-medium text-sm hover:opacity-90 transition-all hover:-translate-y-0.5"
+          onClick={handleReset}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 bg-destructive text-destructive-foreground p-2.5 rounded-md font-medium text-sm hover:opacity-90 transition-all hover:-translate-y-0.5 disabled:opacity-50"
         >
           <Trash2 className="w-4 h-4" />
           Limpiar Datos

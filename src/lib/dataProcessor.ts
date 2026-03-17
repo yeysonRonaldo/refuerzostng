@@ -5,20 +5,22 @@ function parseDate(raw: unknown): Date | null {
   if (!raw) return null;
   if (raw instanceof Date) return raw;
   if (typeof raw === 'number') {
-    // Excel serial date
     const date = new Date((raw - 25569) * 86400 * 1000);
     return isNaN(date.getTime()) ? null : date;
   }
   const str = String(raw);
-  const d = new Date(str);
-  if (!isNaN(d.getTime())) return d;
-
-  // Try dd/mm/yyyy
-  const parts = str.split('/');
-  if (parts.length === 3) {
-    const parsed = new Date(+parts[2], +parts[1] - 1, +parts[0]);
+  // Try mm/dd/yy or mm/dd/yyyy (US format from Excel)
+  const slashParts = str.split('/');
+  if (slashParts.length === 3) {
+    let year = parseInt(slashParts[2]);
+    if (year < 100) year += 2000;
+    const month = parseInt(slashParts[0]) - 1;
+    const day = parseInt(slashParts[1]);
+    const parsed = new Date(year, month, day);
     if (!isNaN(parsed.getTime())) return parsed;
   }
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) return d;
   return null;
 }
 
@@ -27,7 +29,20 @@ function formatDate(d: Date | null): string {
   return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-export function parseExcelFile(file: File): Promise<RefuerzoRecord[]> {
+/**
+ * Creates a dedupe key from a record to identify duplicates.
+ * Uses: Cliente + IdServicio + PlagaInterna + PlagaExterna + Fecha
+ */
+function createDedupeKey(row: Record<string, unknown>): string {
+  const cliente = String(row['Cliente'] || '').trim().toLowerCase();
+  const idServicio = String(row['Id Servicio'] || '').trim();
+  const plagaInt = String(row['Plagas Internas'] || '').trim().toLowerCase();
+  const plagaExt = String(row['Plagas Externas'] || '').trim().toLowerCase();
+  const fecha = String(row['Fecha del Último Servicio'] || '').trim();
+  return `${cliente}|${idServicio}|${plagaInt}|${plagaExt}|${fecha}`;
+}
+
+export function parseExcelFile(file: File): Promise<{ records: RefuerzoRecord[]; duplicatesSkipped: number }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -37,27 +52,54 @@ export function parseExcelFile(file: File): Promise<RefuerzoRecord[]> {
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rawData: Record<string, unknown>[] = XLSX.utils.sheet_to_json(firstSheet);
 
-        const processed: RefuerzoRecord[] = rawData.map((row: Record<string, unknown>) => {
+        const seen = new Set<string>();
+        const processed: RefuerzoRecord[] = [];
+        let duplicatesSkipped = 0;
+        let counter = 1;
+
+        for (const row of rawData) {
+          const dedupeKey = createDedupeKey(row);
+
+          if (seen.has(dedupeKey)) {
+            duplicatesSkipped++;
+            continue;
+          }
+          seen.add(dedupeKey);
+
           const rawDate = row['Fecha del Último Servicio'] || row['Fecha'];
           const parsedDateObj = parseDate(rawDate);
-          const plaga = String(row['Plagas Internas'] || row['Plaga'] || '-');
+          const plagaInterna = String(row['Plagas Internas'] || row['Plaga'] || '-');
+          const plagaExterna = String(row['Plagas Externas'] || '-');
 
-          return {
-            id: String(row['Id Servicio'] || row['No.'] || Math.random().toString(36).substr(2, 9)),
+          // Auto-generate ID like TN1, TN2...
+          const id = `TN${counter}`;
+          counter++;
+
+          processed.push({
+            id,
+            idServicio: String(row['Id Servicio'] || ''),
             displayDate: formatDate(parsedDateObj),
             dateObj: parsedDateObj,
             cliente: String(row['Cliente'] || 'Desconocido'),
+            idCliente: String(row['Id Cliente'] || ''),
+            codigoCliente: String(row['Código Cliente'] || ''),
             tecnico: String(row['Tecnicos'] || row['Tecnico'] || '-'),
-            plaga,
+            inicialesTecnicos: String(row['Iniciales Tecnicos'] || '-'),
+            programador: String(row['Programador'] || '-'),
+            plaga: plagaInterna,
+            plagasExternas: plagaExterna,
             gravedad: (String(row['Gravedad'] || 'Bajo')) as 'Alto' | 'Medio' | 'Bajo',
             direccion: String(row['Dirección'] || '-'),
-            anio: row['Año'] as number | undefined,
+            anio: parsedDateObj ? parsedDateObj.getFullYear() : (row['Año'] as number | undefined),
             diasActivos: parseInt(String(row['Días Activos'])) || 0,
+            recomendaciones: String(row['Recomendaciones'] || '-'),
+            recomendacionesTotales: parseInt(String(row['Recomendaciones totales'])) || 0,
             originalData: row,
-          };
-        });
+            _dedupeKey: dedupeKey,
+          });
+        }
 
-        resolve(processed);
+        resolve({ records: processed, duplicatesSkipped });
       } catch (err) {
         reject(err);
       }
