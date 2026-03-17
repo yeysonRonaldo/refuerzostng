@@ -177,7 +177,12 @@ export default function Sidebar() {
       </div>
 
       {/* Reset */}
-      <div className="mt-auto">
+      <div className="mt-auto flex flex-col gap-2">
+        {/* User info */}
+        <div className="text-xs text-muted-foreground truncate px-1">
+          {user?.email}
+          {isAdmin && <span className="ml-1 text-primary font-semibold">(Admin)</span>}
+        </div>
         <button
           onClick={handleReset}
           disabled={loading}
@@ -185,6 +190,13 @@ export default function Sidebar() {
         >
           <Trash2 className="w-4 h-4" />
           Limpiar Datos
+        </button>
+        <button
+          onClick={logout}
+          className="w-full flex items-center justify-center gap-2 border border-border text-muted-foreground p-2.5 rounded-md font-medium text-sm hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Cerrar Sesión
         </button>
       </div>
     </aside>
