@@ -1,64 +1,13 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useAppContext } from '@/context/AppContext';
-import { Navigation, MapPin, Search, Filter, Route, ExternalLink, Loader2, ChevronDown, ChevronUp, MapPinOff } from 'lucide-react';
+import { Navigation, MapPin, Search, Filter, Route, ExternalLink, ChevronDown, ChevronUp, MapPinOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { RefuerzoRecord } from '@/types/refuerzos';
-
-// Fix leaflet default marker icons
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
-
-// Custom colored markers
-const createColoredIcon = (color: string, label?: string) => {
-  return L.divIcon({
-    className: 'custom-marker',
-    html: `<div style="
-      background:${color};
-      width:32px;height:32px;border-radius:50% 50% 50% 0;
-      transform:rotate(-45deg);
-      border:3px solid white;
-      box-shadow:0 2px 8px rgba(0,0,0,0.3);
-      display:flex;align-items:center;justify-content:center;
-    ">
-      <span style="transform:rotate(45deg);color:white;font-weight:700;font-size:12px;">${label || ''}</span>
-    </div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
-  });
-};
 
 const GRAVITY_COLORS: Record<string, string> = {
   Alto: '#ef4444',
   Medio: '#f59e0b',
   Bajo: '#22c55e',
 };
-
-interface GeocodedItem {
-  record: RefuerzoRecord;
-  lat: number;
-  lng: number;
-  index: number;
-}
-
-// Component to fit map bounds
-function FitBounds({ items }: { items: GeocodedItem[] }) {
-  const map = useMap();
-  useEffect(() => {
-    if (items.length > 0) {
-      const bounds = L.latLngBounds(items.map(i => [i.lat, i.lng]));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-    }
-  }, [items, map]);
-  return null;
-}
 
 export default function RoutesView() {
   const { currentData, getPestName } = useAppContext();
@@ -70,9 +19,8 @@ export default function RoutesView() {
   const [minDays, setMinDays] = useState('');
   const [maxDays, setMaxDays] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [geocodedItems, setGeocodedItems] = useState<GeocodedItem[]>([]);
-  const [isGeocoding, setIsGeocoding] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
+  const [mapQuery, setMapQuery] = useState('');
 
   const allTechnicians = useMemo(() => {
     const set = new Set<string>();
@@ -109,53 +57,6 @@ export default function RoutesView() {
       });
   }, [currentData, techFilter, gravityFilter, minDays, maxDays, getPestName]);
 
-  // Geocode selected items
-  const geocodeSelected = useCallback(async () => {
-    const selected = filteredData.filter(d => selectedIds.has(d.id));
-    if (selected.length === 0) {
-      setGeocodedItems([]);
-      return;
-    }
-
-    setIsGeocoding(true);
-    const results: GeocodedItem[] = [];
-
-    for (let i = 0; i < selected.length; i++) {
-      const item = selected[i];
-      const addr = item.direccion && item.direccion !== '-' ? item.direccion : item.cliente;
-      const query = `${item.cliente}, ${addr}`;
-
-      try {
-        const resp = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-          { headers: { 'Accept-Language': 'es' } }
-        );
-        const data = await resp.json();
-        if (data && data.length > 0) {
-          results.push({
-            record: item,
-            lat: parseFloat(data[0].lat),
-            lng: parseFloat(data[0].lon),
-            index: i + 1,
-          });
-        }
-        // Rate limit for Nominatim
-        if (i < selected.length - 1) await new Promise(r => setTimeout(r, 1100));
-      } catch {
-        // Skip failed geocodes
-      }
-    }
-
-    setGeocodedItems(results);
-    setIsGeocoding(false);
-
-    if (results.length === 0 && selected.length > 0) {
-      toast.info('No se pudieron ubicar las direcciones en el mapa. Puedes usar Google Maps directamente.');
-    } else if (results.length < selected.length) {
-      toast.info(`Se ubicaron ${results.length} de ${selected.length} direcciones.`);
-    }
-  }, [filteredData, selectedIds]);
-
   const toggleSelection = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -165,23 +66,12 @@ export default function RoutesView() {
     });
   };
 
-  const selectAll = () => {
-    setSelectedIds(new Set(filteredData.map(d => d.id)));
-  };
+  const selectAll = () => setSelectedIds(new Set(filteredData.map(d => d.id)));
+  const clearSelection = () => { setSelectedIds(new Set()); setMapQuery(''); };
 
-  const clearSelection = () => {
-    setSelectedIds(new Set());
-    setGeocodedItems([]);
-  };
-
-  const openGoogleMapsRoute = () => {
-    if (selectedIds.size === 0) {
-      toast.warning('Selecciona al menos un cliente.');
-      return;
-    }
-
+  const getDestinations = () => {
     const selectedItems = filteredData.filter(d => selectedIds.has(d.id));
-    const destinations = selectedItems
+    return selectedItems
       .map(i => {
         let query = '';
         if (i.cliente && i.cliente !== 'Desconocido') query += i.cliente;
@@ -190,9 +80,26 @@ export default function RoutesView() {
         return query;
       })
       .filter(s => s.length > 0);
+  };
 
+  const showOnMap = () => {
+    if (selectedIds.size === 0) {
+      toast.warning('Selecciona al menos un cliente.');
+      return;
+    }
+    const destinations = getDestinations();
     if (destinations.length === 0) {
       toast.error('No se pudieron leer las direcciones.');
+      return;
+    }
+    // Show first selected on embedded map
+    setMapQuery(destinations[0]);
+  };
+
+  const openGoogleMapsRoute = () => {
+    const destinations = getDestinations();
+    if (destinations.length === 0) {
+      toast.warning('Selecciona al menos un cliente.');
       return;
     }
 
@@ -281,7 +188,6 @@ export default function RoutesView() {
       <div className="flex flex-1 gap-3 min-h-0">
         {/* Left: List */}
         <div className="w-[380px] flex-shrink-0 flex flex-col bg-card rounded-lg border border-border overflow-hidden">
-          {/* List header */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
             <span className="text-xs font-semibold text-muted-foreground">
               {filteredData.length} registros • {selectedIds.size} seleccionados
@@ -293,7 +199,6 @@ export default function RoutesView() {
             </div>
           </div>
 
-          {/* Scrollable list */}
           <div className="flex-1 overflow-y-auto">
             {filteredData.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
@@ -303,8 +208,6 @@ export default function RoutesView() {
             ) : (
               filteredData.map((item, idx) => {
                 const isSelected = selectedIds.has(item.id);
-                const geocoded = geocodedItems.find(g => g.record.id === item.id);
-
                 return (
                   <div
                     key={item.id}
@@ -313,15 +216,14 @@ export default function RoutesView() {
                       isSelected ? 'bg-primary/5 border-l-2 border-l-primary' : 'border-l-2 border-l-transparent'
                     }`}
                   >
-                    {/* Number / checkbox */}
-                    <div className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold mt-0.5 ${
-                      isSelected
-                        ? 'text-white'
-                        : 'bg-muted text-muted-foreground'
-                    }`} style={isSelected ? { background: GRAVITY_COLORS[item.gravedad] || '#64748b' } : {}}>
-                      {isSelected ? (geocoded?.index || '✓') : idx + 1}
+                    <div
+                      className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold mt-0.5 ${
+                        isSelected ? 'text-white' : 'bg-muted text-muted-foreground'
+                      }`}
+                      style={isSelected ? { background: GRAVITY_COLORS[item.gravedad] || '#64748b' } : {}}
+                    >
+                      {isSelected ? '✓' : idx + 1}
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-sm truncate">{item.cliente}</span>
@@ -352,12 +254,12 @@ export default function RoutesView() {
           {/* Actions */}
           <div className="border-t border-border p-3 flex flex-col gap-2 bg-card">
             <button
-              onClick={geocodeSelected}
-              disabled={selectedIds.size === 0 || isGeocoding}
+              onClick={showOnMap}
+              disabled={selectedIds.size === 0}
               className="w-full flex items-center justify-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-2 rounded-md font-medium text-sm hover:bg-primary/20 transition-all disabled:opacity-40"
             >
-              {isGeocoding ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-              {isGeocoding ? 'Ubicando...' : 'Mostrar en Mapa'}
+              <MapPin className="w-4 h-4" />
+              Ver en Mapa
             </button>
             <button
               onClick={openGoogleMapsRoute}
@@ -372,58 +274,23 @@ export default function RoutesView() {
         </div>
 
         {/* Right: Map */}
-        <div className="flex-1 rounded-lg border border-border overflow-hidden relative">
-          <MapContainer
-            center={[14.6349, -90.5069]} // Guatemala default
-            zoom={7}
-            className="h-full w-full z-0"
-            style={{ minHeight: '400px' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        <div className="flex-1 rounded-lg border border-border overflow-hidden relative bg-card">
+          {mapQuery ? (
+            <iframe
+              className="w-full h-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`}
+              title="Mapa de ubicación"
             />
-            {geocodedItems.map((item) => (
-              <Marker
-                key={item.record.id}
-                position={[item.lat, item.lng]}
-                icon={createColoredIcon(GRAVITY_COLORS[item.record.gravedad] || '#64748b', String(item.index))}
-              >
-                <Popup>
-                  <div style={{ minWidth: 180 }}>
-                    <strong style={{ fontSize: '0.9rem' }}>{item.record.cliente}</strong>
-                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: 4 }}>
-                      {item.record.direccion !== '-' ? item.record.direccion : 'Sin dirección'}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', marginTop: 6, display: 'flex', gap: 8 }}>
-                      <span style={{ color: GRAVITY_COLORS[item.record.gravedad], fontWeight: 700 }}>{item.record.gravedad}</span>
-                      <span>{item.record.diasActivos} días</span>
-                      <span>{item.record.plaga}</span>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-            {geocodedItems.length > 0 && <FitBounds items={geocodedItems} />}
-          </MapContainer>
-
-          {/* Map overlay when empty */}
-          {geocodedItems.length === 0 && !isGeocoding && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[400]">
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl px-6 py-4 text-center border border-border shadow-lg">
-                <MapPin className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Selecciona clientes y pulsa <strong>"Mostrar en Mapa"</strong>
-                </p>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
+              <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
+                <MapPin className="w-8 h-8 opacity-30" />
               </div>
-            </div>
-          )}
-
-          {isGeocoding && (
-            <div className="absolute inset-0 flex items-center justify-center z-[400] bg-background/40 backdrop-blur-sm">
-              <div className="flex items-center gap-3 bg-card px-5 py-3 rounded-lg border border-border shadow-lg">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                <span className="text-sm font-medium">Ubicando direcciones...</span>
+              <div className="text-center">
+                <p className="text-sm font-medium">Selecciona clientes y pulsa "Ver en Mapa"</p>
+                <p className="text-xs mt-1 opacity-70">O usa "Ruta en Google Maps" para navegación completa</p>
               </div>
             </div>
           )}
