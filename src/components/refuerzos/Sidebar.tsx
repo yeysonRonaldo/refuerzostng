@@ -3,7 +3,7 @@ import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { parseExcelFile } from '@/lib/dataProcessor';
 import { uploadToFirestore, loadFromFirestore, clearFirestoreData } from '@/lib/firestoreService';
-import { LayoutDashboard, Activity, Database, Trash2, Upload, Download, Loader2, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Activity, Database, Upload, Download, Loader2, Users, LogOut, Navigation, FileText, FileSpreadsheet } from 'lucide-react';
 import { TabName } from '@/types/refuerzos';
 import { toast } from 'sonner';
 
@@ -24,7 +24,10 @@ export default function Sidebar() {
   const navItems: { id: TabName; label: string; icon: React.ReactNode }[] = [
     { id: 'metrics', label: 'Métricas', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
     { id: 'analysis', label: 'Análisis de Cambios', icon: <Activity className="w-[18px] h-[18px]" /> },
+    { id: 'routes', label: 'Rutas & Asignación', icon: <Navigation className="w-[18px] h-[18px]" /> },
+    { id: 'reports', label: 'Generador Reportes PDF', icon: <FileText className="w-[18px] h-[18px]" /> },
     { id: 'database', label: 'Base de Datos', icon: <Database className="w-[18px] h-[18px]" /> },
+    { id: 'export', label: 'Exportar a Excel', icon: <FileSpreadsheet className="w-[18px] h-[18px]" /> },
     ...(isAdmin ? [{ id: 'users' as TabName, label: 'Usuarios', icon: <Users className="w-[18px] h-[18px]" /> }] : []),
   ];
 
