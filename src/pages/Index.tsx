@@ -1,13 +1,22 @@
+import { lazy, Suspense } from 'react';
 import Header from '@/components/refuerzos/Header';
 import Sidebar from '@/components/refuerzos/Sidebar';
-import MetricsView from '@/components/refuerzos/MetricsView';
-import AnalysisView from '@/components/refuerzos/AnalysisView';
-import DatabaseView from '@/components/refuerzos/DatabaseView';
-import UserManagement from '@/components/refuerzos/UserManagement';
-import RoutesView from '@/components/refuerzos/RoutesView';
-import ReportsView from '@/components/refuerzos/ReportsView';
-import ExportView from '@/components/refuerzos/ExportView';
 import { useAppContext } from '@/context/AppContext';
+import { Loader2 } from 'lucide-react';
+
+const MetricsView = lazy(() => import('@/components/refuerzos/MetricsView'));
+const AnalysisView = lazy(() => import('@/components/refuerzos/AnalysisView'));
+const DatabaseView = lazy(() => import('@/components/refuerzos/DatabaseView'));
+const UserManagement = lazy(() => import('@/components/refuerzos/UserManagement'));
+const RoutesView = lazy(() => import('@/components/refuerzos/RoutesView'));
+const ReportsView = lazy(() => import('@/components/refuerzos/ReportsView'));
+const ExportView = lazy(() => import('@/components/refuerzos/ExportView'));
+
+const TabFallback = () => (
+  <div className="flex items-center justify-center h-64">
+    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+  </div>
+);
 
 export default function Index() {
   const { activeTab } = useAppContext();
@@ -18,13 +27,15 @@ export default function Index() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <main className="flex-1 overflow-y-auto p-5">
-          {activeTab === 'metrics' && <MetricsView />}
-          {activeTab === 'analysis' && <AnalysisView />}
-          {activeTab === 'routes' && <RoutesView />}
-          {activeTab === 'reports' && <ReportsView />}
-          {activeTab === 'database' && <DatabaseView />}
-          {activeTab === 'export' && <ExportView />}
-          {activeTab === 'users' && <UserManagement />}
+          <Suspense fallback={<TabFallback />}>
+            {activeTab === 'metrics' && <MetricsView />}
+            {activeTab === 'analysis' && <AnalysisView />}
+            {activeTab === 'routes' && <RoutesView />}
+            {activeTab === 'reports' && <ReportsView />}
+            {activeTab === 'database' && <DatabaseView />}
+            {activeTab === 'export' && <ExportView />}
+            {activeTab === 'users' && <UserManagement />}
+          </Suspense>
         </main>
       </div>
     </div>
