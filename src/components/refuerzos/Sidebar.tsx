@@ -3,7 +3,7 @@ import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { parseExcelFile } from '@/lib/dataProcessor';
 import { uploadToFirestore, loadFromFirestore, clearFirestoreData } from '@/lib/firestoreService';
-import { LayoutDashboard, Activity, Database, Trash2, Upload, Download, Loader2, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Activity, Database, Upload, Download, Loader2, Users, LogOut, Navigation, FileText, FileSpreadsheet } from 'lucide-react';
 import { TabName } from '@/types/refuerzos';
 import { toast } from 'sonner';
 
