@@ -21,6 +21,21 @@ export default function Sidebar() {
   const [loading, setLoading] = useState(false);
   const [loadingFirestore, setLoadingFirestore] = useState(false);
 
+  // Auto-load from Firebase on mount
+  useEffect(() => {
+    if (processedData.length === 0) {
+      setLoadingFirestore(true);
+      loadFromFirestore()
+        .then(data => {
+          if (data.length > 0) {
+            setProcessedData(data);
+          }
+        })
+        .catch(err => console.error('Auto-load error:', err))
+        .finally(() => setLoadingFirestore(false));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const navItems: { id: TabName; label: string; icon: React.ReactNode }[] = [
     { id: 'metrics', label: 'Métricas', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
     { id: 'analysis', label: 'Análisis de Cambios', icon: <Activity className="w-[18px] h-[18px]" /> },
