@@ -1,15 +1,25 @@
 export interface RefuerzoRecord {
   id: string;
+  idServicio: string;
   displayDate: string;
   dateObj: Date | null;
   cliente: string;
+  idCliente: string;
+  codigoCliente: string;
   tecnico: string;
+  inicialesTecnicos: string;
+  programador: string;
   plaga: string;
+  plagasExternas: string;
   gravedad: 'Alto' | 'Medio' | 'Bajo';
   direccion: string;
   anio: number | undefined;
   diasActivos: number;
+  recomendaciones: string;
+  recomendacionesTotales: number;
   originalData: Record<string, unknown>;
+  // Composite key for dedup
+  _dedupeKey: string;
 }
 
 export type TabName = 'metrics' | 'analysis' | 'database';
