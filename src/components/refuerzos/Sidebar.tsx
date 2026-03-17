@@ -133,7 +133,7 @@ export default function Sidebar() {
           </div>
         )}
         <p className="text-xs text-muted-foreground">Sube Excel → se guarda en Firebase</p>
-
+      </div>
 
       {/* Filters */}
       {processedData.length > 0 && (
