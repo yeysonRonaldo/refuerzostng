@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Navigation, MapPin, Search, Filter, Route, ExternalLink, ChevronDown, ChevronUp, MapPinOff } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,6 +8,9 @@ const GRAVITY_COLORS: Record<string, string> = {
   Medio: '#f59e0b',
   Bajo: '#22c55e',
 };
+
+const ITEM_HEIGHT = 76; // approximate height of each list item in px
+const OVERSCAN = 10;
 
 export default function RoutesView() {
   const { currentData, getPestName } = useAppContext();
@@ -21,6 +24,9 @@ export default function RoutesView() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(true);
   const [mapQuery, setMapQuery] = useState('');
+  const [scrollTop, setScrollTop] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const containerHeight = useRef(400);
 
   const allTechnicians = useMemo(() => {
     const set = new Set<string>();
@@ -57,6 +63,29 @@ export default function RoutesView() {
       });
   }, [currentData, techFilter, gravityFilter, minDays, maxDays, getPestName]);
 
+  // Measure container height
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) {
+      const ro = new ResizeObserver(entries => {
+        containerHeight.current = entries[0]?.contentRect.height || 400;
+      });
+      ro.observe(el);
+      containerHeight.current = el.clientHeight;
+      return () => ro.disconnect();
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (scrollRef.current) setScrollTop(scrollRef.current.scrollTop);
+  }, []);
+
+  // Virtual window calculation
+  const totalHeight = filteredData.length * ITEM_HEIGHT;
+  const startIdx = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - OVERSCAN);
+  const endIdx = Math.min(filteredData.length, Math.ceil((scrollTop + containerHeight.current) / ITEM_HEIGHT) + OVERSCAN);
+  const visibleItems = filteredData.slice(startIdx, endIdx);
+
   const toggleSelection = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -92,7 +121,6 @@ export default function RoutesView() {
       toast.error('No se pudieron leer las direcciones.');
       return;
     }
-    // Show first selected on embedded map
     setMapQuery(destinations[0]);
   };
 
@@ -199,55 +227,69 @@ export default function RoutesView() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto"
+          >
             {filteredData.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
                 <MapPinOff className="w-8 h-8 opacity-30" />
                 <span className="text-sm">Sin resultados</span>
               </div>
             ) : (
-              filteredData.map((item, idx) => {
-                const isSelected = selectedIds.has(item.id);
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => toggleSelection(item.id)}
-                    className={`flex items-start gap-2.5 px-3 py-2.5 border-b border-border/50 cursor-pointer transition-all hover:bg-accent/50 ${
-                      isSelected ? 'bg-primary/5 border-l-2 border-l-primary' : 'border-l-2 border-l-transparent'
-                    }`}
-                  >
+              <div style={{ height: totalHeight, position: 'relative' }}>
+                {visibleItems.map((item, i) => {
+                  const actualIdx = startIdx + i;
+                  const isSelected = selectedIds.has(item.id);
+                  return (
                     <div
-                      className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold mt-0.5 ${
-                        isSelected ? 'text-white' : 'bg-muted text-muted-foreground'
+                      key={item.id}
+                      onClick={() => toggleSelection(item.id)}
+                      style={{
+                        position: 'absolute',
+                        top: actualIdx * ITEM_HEIGHT,
+                        left: 0,
+                        right: 0,
+                        height: ITEM_HEIGHT,
+                      }}
+                      className={`flex items-start gap-2.5 px-3 py-2.5 border-b border-border/50 cursor-pointer transition-colors hover:bg-accent/50 ${
+                        isSelected ? 'bg-primary/5 border-l-2 border-l-primary' : 'border-l-2 border-l-transparent'
                       }`}
-                      style={isSelected ? { background: GRAVITY_COLORS[item.gravedad] || '#64748b' } : {}}
                     >
-                      {isSelected ? '✓' : idx + 1}
+                      <div
+                        className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold mt-0.5 ${
+                          isSelected ? 'text-white' : 'bg-muted text-muted-foreground'
+                        }`}
+                        style={isSelected ? { background: GRAVITY_COLORS[item.gravedad] || '#64748b' } : {}}
+                      >
+                        {isSelected ? '✓' : actualIdx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-sm truncate">{item.cliente}</span>
+                          <span
+                            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ background: GRAVITY_COLORS[item.gravedad] }}
+                            title={item.gravedad}
+                          />
+                        </div>
+                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {item.direccion && item.direccion !== '-' ? item.direccion : 'Sin dirección'}
+                          </span>
+                        </div>
+                        <div className="flex gap-3 text-[10px] text-muted-foreground mt-1">
+                          <span>{item.diasActivos}d activos</span>
+                          <span className="font-medium text-foreground/70">{getPestName(item.plaga)}</span>
+                          <span>{item.tecnico}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-sm truncate">{item.cliente}</span>
-                        <span
-                          className="inline-block w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ background: GRAVITY_COLORS[item.gravedad] }}
-                          title={item.gravedad}
-                        />
-                      </div>
-                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-                        <MapPin className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">
-                          {item.direccion && item.direccion !== '-' ? item.direccion : 'Sin dirección'}
-                        </span>
-                      </div>
-                      <div className="flex gap-3 text-[10px] text-muted-foreground mt-1">
-                        <span>{item.diasActivos}d activos</span>
-                        <span className="font-medium text-foreground/70">{getPestName(item.plaga)}</span>
-                        <span>{item.tecnico}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </div>
 
