@@ -84,7 +84,7 @@ export default function SeverityLineChart() {
               strokeLinejoin="round"
             />
             {dataArray.map((d, i) => {
-              const val = d[l.prop as keyof typeof d] as number;
+              const val = (d as unknown as Record<string, number>)[l.prop] || 0;
               if (val === 0 && l.prop !== 'total') return null;
               return (
                 <g key={i}>
