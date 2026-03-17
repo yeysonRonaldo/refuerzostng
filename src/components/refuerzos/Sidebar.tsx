@@ -134,7 +134,6 @@ export default function Sidebar() {
             <Loader2 className="w-3 h-3 animate-spin" /> Procesando y subiendo...
           </div>
         )}
-        <p className="text-xs text-muted-foreground">Sube Excel → se guarda en Firebase</p>
       </div>
 
       {/* Filters */}
