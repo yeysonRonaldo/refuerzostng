@@ -17,8 +17,16 @@ export default function Sidebar() {
     processedData, activeTab, yearFilter, monthFilter,
     setProcessedData, setActiveTab, setYearFilter, setMonthFilter, resetData,
   } = useAppContext();
+  const { isAdmin, logout, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingFirestore, setLoadingFirestore] = useState(false);
+
+  const navItems: { id: TabName; label: string; icon: React.ReactNode }[] = [
+    { id: 'metrics', label: 'Métricas', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
+    { id: 'analysis', label: 'Análisis de Cambios', icon: <Activity className="w-[18px] h-[18px]" /> },
+    { id: 'database', label: 'Base de Datos', icon: <Database className="w-[18px] h-[18px]" /> },
+    ...(isAdmin ? [{ id: 'users' as TabName, label: 'Usuarios', icon: <Users className="w-[18px] h-[18px]" /> }] : []),
+  ];
 
   const years = Array.from(new Set(
     processedData
