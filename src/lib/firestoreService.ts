@@ -95,7 +95,7 @@ export async function uploadToFirestore(records: RefuerzoRecord[]): Promise<{ up
     const chunk = newRecords.slice(i, i + BATCH_SIZE);
 
     for (const record of chunk) {
-      const docRef = doc(dataCol, record.id);
+      const docRef = doc(dataCol);  // Auto-generate unique Firestore doc ID
       batch.set(docRef, serializeRecord(record));
     }
 
