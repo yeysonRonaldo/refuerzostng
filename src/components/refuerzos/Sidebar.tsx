@@ -65,7 +65,7 @@ export default function Sidebar() {
 
       // Merge locally instead of re-fetching everything
       if (newRecords.length > 0) {
-        setProcessedData(prev => [...prev, ...newRecords]);
+        setProcessedData([...processedData, ...newRecords]);
       }
 
       const totalSkipped = duplicatesSkipped + skipped;
