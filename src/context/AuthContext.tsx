@@ -29,13 +29,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        // Check admin: either by email match or by Firestore role doc
+        // Check admin: by email match or by Firestore roles
         if (firebaseUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
           setIsAdmin(true);
         } else {
           try {
-            const roleDoc = await getDoc(doc(db, 'refuezo', 'public', 'roles', firebaseUser.uid));
-            setIsAdmin(roleDoc.exists() && roleDoc.data()?.role === 'admin');
+            // Check by email-based doc ID
+            const emailDocId = (firebaseUser.email || '').toLowerCase().replace(/[.@]/g, '_');
+            const roleDoc = await getDoc(doc(db, 'refuezo', 'public', 'roles', emailDocId));
+            if (roleDoc.exists() && roleDoc.data()?.role === 'admin') {
+              setIsAdmin(true);
+            } else {
+              // Also check by UID
+              const uidDoc = await getDoc(doc(db, 'refuezo', 'public', 'roles', firebaseUser.uid));
+              setIsAdmin(uidDoc.exists() && uidDoc.data()?.role === 'admin');
+            }
           } catch {
             setIsAdmin(false);
           }
