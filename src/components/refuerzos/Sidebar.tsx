@@ -59,17 +59,19 @@ export default function Sidebar() {
     try {
       const { records, duplicatesSkipped } = await parseExcelFile(file);
 
-      // Upload to Firestore
+      // Upload to Firestore (returns new records for local merge)
       toast.info(`Subiendo ${records.length} registros a Firebase...`);
-      const { uploaded, skipped } = await uploadToFirestore(records);
+      const { uploaded, skipped, newRecords } = await uploadToFirestore(records);
 
-      // Load all data from Firestore (includes previous data)
-      const allData = await loadFromFirestore();
-      setProcessedData(allData);
+      // Merge locally instead of re-fetching everything
+      if (newRecords.length > 0) {
+        setProcessedData(prev => [...prev, ...newRecords]);
+      }
 
       const totalSkipped = duplicatesSkipped + skipped;
+      const totalInDB = processedData.length + newRecords.length;
       toast.success(
-        `✅ ${uploaded} registros nuevos subidos. ${totalSkipped > 0 ? `${totalSkipped} duplicados omitidos.` : ''} Total en BD: ${allData.length}`
+        `✅ ${uploaded} registros nuevos subidos. ${totalSkipped > 0 ? `${totalSkipped} duplicados omitidos.` : ''} Total en BD: ${totalInDB}`
       );
     } catch (err) {
       console.error(err);
