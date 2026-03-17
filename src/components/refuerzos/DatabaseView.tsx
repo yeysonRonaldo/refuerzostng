@@ -74,8 +74,8 @@ export default function DatabaseView() {
       const { key, dir } = sortConfig;
       const mult = dir === 'asc' ? 1 : -1;
       data.sort((a, b) => {
-        let valA: unknown = (a as Record<string, unknown>)[key];
-        let valB: unknown = (b as Record<string, unknown>)[key];
+        let valA: unknown = (a as unknown as Record<string, unknown>)[key];
+        let valB: unknown = (b as unknown as Record<string, unknown>)[key];
         if (key === 'plaga') { valA = getPestName(a.plaga); valB = getPestName(b.plaga); }
         if (valA === valB) return 0;
         if (valA == null) return 1;

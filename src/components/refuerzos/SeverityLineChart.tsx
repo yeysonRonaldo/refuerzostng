@@ -35,8 +35,8 @@ export default function SeverityLineChart() {
   const getX = (i: number) => single ? pad.left + chartW / 2 : pad.left + i * stepX;
   const getY = (v: number) => height - pad.bottom - (v / yMax) * chartH;
 
-  const makeLine = (prop: keyof TimelineEntry & string) =>
-    dataArray.map((d, i) => `${getX(i)},${getY(d[prop] as number)}`).join(' ');
+  const makeLine = (prop: string) =>
+    dataArray.map((d, i) => `${getX(i)},${getY((d as unknown as Record<string, number>)[prop] || 0)}`).join(' ');
 
   const lines = [
     { prop: 'bajo', color: 'hsl(var(--chart-bajo))', label: 'Bajo' },
