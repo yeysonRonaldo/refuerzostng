@@ -64,7 +64,7 @@ export default function DatabaseView() {
         let cellVal = '';
         if (key === 'dateObj') cellVal = d.displayDate;
         else if (key === 'plaga') cellVal = getPestName(d.plaga);
-        else cellVal = String((d as Record<string, unknown>)[key] || '');
+        else cellVal = String((d as unknown as Record<string, unknown>)[key] || '');
         return cellVal.toLowerCase().includes(val);
       });
     });
