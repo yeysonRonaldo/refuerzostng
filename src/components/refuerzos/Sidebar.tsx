@@ -184,14 +184,6 @@ export default function Sidebar() {
           {isAdmin && <span className="ml-1 text-primary font-semibold">(Admin)</span>}
         </div>
         <button
-          onClick={handleReset}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-destructive text-destructive-foreground p-2.5 rounded-md font-medium text-sm hover:opacity-90 transition-all hover:-translate-y-0.5 disabled:opacity-50"
-        >
-          <Trash2 className="w-4 h-4" />
-          Limpiar Datos
-        </button>
-        <button
           onClick={logout}
           className="w-full flex items-center justify-center gap-2 border border-border text-muted-foreground p-2.5 rounded-md font-medium text-sm hover:bg-accent hover:text-foreground transition-colors"
         >
