@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import Header from '@/components/refuerzos/Header';
 import Sidebar from '@/components/refuerzos/Sidebar';
 import { useAppContext } from '@/context/AppContext';
@@ -20,13 +20,14 @@ const TabFallback = () => (
 
 export default function Index() {
   const { activeTab } = useAppContext();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Header />
+      <Header onToggleSidebar={() => setSidebarOpen(true)} />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto p-5">
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-5">
           <Suspense fallback={<TabFallback />}>
             {activeTab === 'metrics' && <MetricsView />}
             {activeTab === 'analysis' && <AnalysisView />}
