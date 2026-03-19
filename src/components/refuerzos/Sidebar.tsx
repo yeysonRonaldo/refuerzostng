@@ -3,7 +3,7 @@ import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { parseExcelFile } from '@/lib/dataProcessor';
 import { uploadToFirestore, loadFromFirestore, clearFirestoreData } from '@/lib/firestoreService';
-import { LayoutDashboard, Activity, Database, Upload, Download, Loader2, Users, LogOut, Navigation, FileText, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Activity, Database, Upload, Download, Loader2, Users, LogOut, Navigation, FileText, FileSpreadsheet, X } from 'lucide-react';
 import { TabName } from '@/types/refuerzos';
 import { toast } from 'sonner';
 
@@ -12,7 +12,12 @@ const MONTH_NAMES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ open, onClose }: SidebarProps) {
   const {
     processedData, activeTab, yearFilter, monthFilter,
     setProcessedData, setActiveTab, setYearFilter, setMonthFilter, resetData,
@@ -58,16 +63,11 @@ export default function Sidebar() {
     setLoading(true);
     try {
       const { records, duplicatesSkipped } = await parseExcelFile(file);
-
-      // Upload to Firestore (returns new records for local merge)
       toast.info(`Subiendo ${records.length} registros a Firebase...`);
       const { uploaded, skipped, newRecords } = await uploadToFirestore(records);
-
-      // Merge locally instead of re-fetching everything
       if (newRecords.length > 0) {
         setProcessedData([...processedData, ...newRecords]);
       }
-
       const totalSkipped = duplicatesSkipped + skipped;
       const totalInDB = processedData.length + newRecords.length;
       toast.success(
@@ -115,8 +115,13 @@ export default function Sidebar() {
     }
   };
 
-  return (
-    <aside className="w-[260px] bg-card border-r border-border p-5 flex flex-col gap-5 flex-shrink-0 overflow-y-auto">
+  const handleNavClick = (id: TabName) => {
+    setActiveTab(id);
+    onClose?.();
+  };
+
+  const sidebarContent = (
+    <>
       {/* File Upload */}
       <div className="flex flex-col gap-2">
         <label className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
@@ -173,7 +178,7 @@ export default function Sidebar() {
         {navItems.map(item => (
           <button
             key={item.id}
-            onClick={() => setActiveTab(item.id)}
+            onClick={() => handleNavClick(item.id)}
             className={`flex items-center gap-2.5 px-3 py-2.5 rounded-md font-medium text-sm transition-colors
               ${activeTab === item.id
                 ? 'bg-primary/10 text-primary font-semibold'
@@ -186,9 +191,8 @@ export default function Sidebar() {
         ))}
       </div>
 
-      {/* Reset */}
+      {/* User & Logout */}
       <div className="mt-auto flex flex-col gap-2">
-        {/* User info */}
         <div className="text-xs text-muted-foreground truncate px-1">
           {user?.email}
           {isAdmin && <span className="ml-1 text-primary font-semibold">(Admin)</span>}
@@ -201,6 +205,37 @@ export default function Sidebar() {
           Cerrar Sesión
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-[260px] bg-card border-r border-border p-5 flex-col gap-5 flex-shrink-0 overflow-y-auto">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile/Tablet overlay drawer */}
+      {open && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 transition-opacity"
+            onClick={onClose}
+          />
+          {/* Drawer */}
+          <aside className="relative w-[280px] max-w-[85vw] bg-card p-5 flex flex-col gap-5 overflow-y-auto z-50 shadow-xl animate-in slide-in-from-left duration-200">
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-accent transition-colors"
+              aria-label="Cerrar menú"
+            >
+              <X className="w-5 h-5 text-muted-foreground" />
+            </button>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
