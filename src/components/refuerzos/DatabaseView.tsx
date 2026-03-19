@@ -136,7 +136,7 @@ export default function DatabaseView() {
       )}
 
       {/* Pagination */}
-      <div className="px-4 py-2.5 border-b border-border flex justify-between items-center bg-accent/30">
+      <div className="px-3 sm:px-4 py-2 sm:py-2.5 border-b border-border flex flex-wrap justify-between items-center gap-2 bg-accent/30">
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
