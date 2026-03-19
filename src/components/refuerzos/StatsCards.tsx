@@ -16,7 +16,7 @@ function StatCard({ label, value, colorClass, onClick, delay = 0 }: StatCardProp
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
       onClick={onClick}
-      className="bg-card rounded-lg p-5 shadow-sm border border-border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-primary"
+      className="bg-card rounded-lg p-3 sm:p-5 shadow-sm border border-border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-primary"
     >
       <div className="text-sm text-muted-foreground mb-1">{label}</div>
       <div className={`text-3xl font-bold ${colorClass || 'text-foreground'}`}>
