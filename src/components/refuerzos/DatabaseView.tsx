@@ -165,7 +165,7 @@ export default function DatabaseView() {
             <p>Carga un archivo Excel/CSV para ver la base de datos.</p>
           </div>
         ) : (
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full text-xs sm:text-sm border-collapse min-w-[700px]">
             <thead className="bg-accent/50 sticky top-0">
               <tr>
                 {columns.map(col => (
