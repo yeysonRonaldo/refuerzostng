@@ -35,7 +35,7 @@ export default function BarChart({ title, data, limit = 5, color, drillType }: B
               onClick={() => handleDrillDown(drillType, label)}
               className="flex items-center text-sm cursor-pointer rounded p-1 hover:bg-accent transition-colors"
             >
-              <div className="w-[120px] truncate text-foreground/80">{label}</div>
+              <div className="w-[80px] sm:w-[120px] truncate text-foreground/80 text-xs sm:text-sm">{label}</div>
               <div className="flex-1 bg-accent rounded h-2 mx-2.5 overflow-hidden">
                 <div
                   className="h-full rounded transition-all duration-500"

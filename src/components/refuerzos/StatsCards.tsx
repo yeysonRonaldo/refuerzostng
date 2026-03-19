@@ -19,7 +19,7 @@ function StatCard({ label, value, colorClass, onClick, delay = 0 }: StatCardProp
       className="bg-card rounded-lg p-3 sm:p-5 shadow-sm border border-border cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-primary"
     >
       <div className="text-sm text-muted-foreground mb-1">{label}</div>
-      <div className={`text-3xl font-bold ${colorClass || 'text-foreground'}`}>
+      <div className={`text-2xl sm:text-3xl font-bold ${colorClass || 'text-foreground'}`}>
         {value.toLocaleString()}
       </div>
       <div className="text-xs text-muted-foreground/60 mt-1">Clic para filtrar</div>
