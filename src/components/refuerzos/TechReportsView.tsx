@@ -143,8 +143,8 @@ export default function TechReportsView() {
     const wb = XLSX.utils.book_new();
     const periodLabel = getQuarterLabel(monthKeys);
     const rows: (string | number)[][] = [];
+    const groupRanges: { start: number; end: number }[] = [];
 
-    // Sort techs by total desc
     const sortedTechs = [...techsToShow].sort(
       (a, b) => (techTotals[b]?.total || 0) - (techTotals[a]?.total || 0)
     );
@@ -155,10 +155,9 @@ export default function TechReportsView() {
 
       if (idx > 0) rows.push([]);
 
-      // Tech header
-      rows.push([`${tech} tiene un total de ${tt.total} refuerzos en ${periodLabel}`]);
-      rows.push([`Alta: ${tt.alto}`, `Media: ${tt.medio}`, `Baja: ${tt.bajo}`]);
-      rows.push([]);
+      // Tech header (always visible)
+      rows.push([`${tech} — Total: ${tt.total} refuerzos en ${periodLabel} | Alta: ${tt.alto} | Media: ${tt.medio} | Baja: ${tt.bajo}`]);
+      const groupStart = rows.length;
 
       // Monthly summary
       rows.push(['Mes', 'Infestación', 'Total']);
@@ -195,9 +194,23 @@ export default function TechReportsView() {
         if (c.totals.medio > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Media', c.totals.medio]);
         if (c.totals.bajo > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Baja', c.totals.bajo]);
       });
+
+      const groupEnd = rows.length - 1;
+      if (groupEnd >= groupStart) {
+        groupRanges.push({ start: groupStart, end: groupEnd });
+      }
     });
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Apply row grouping (collapsed by default — click '+' to expand)
+    ws['!rows'] = [];
+    groupRanges.forEach(g => {
+      for (let r = g.start; r <= g.end; r++) {
+        ws['!rows']![r] = { level: 1, hidden: true };
+      }
+    });
+
     const colWidths: number[] = [];
     rows.forEach(row => {
       row.forEach((cell, i) => {
