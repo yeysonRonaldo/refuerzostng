@@ -8,6 +8,7 @@ interface AppState {
   activeTab: TabName;
   yearFilter: string;
   monthFilter: string;
+  techFilter: string;
   drillDownFilter: DrillDownFilter | null;
   isGrouped: boolean;
   selectedPests: string[];
@@ -20,6 +21,7 @@ interface AppContextType extends AppState {
   setActiveTab: (tab: TabName) => void;
   setYearFilter: (year: string) => void;
   setMonthFilter: (month: string) => void;
+  setTechFilter: (tech: string) => void;
   setDrillDownFilter: (filter: DrillDownFilter | null) => void;
   toggleGrouping: () => void;
   addPest: (pest: string) => void;
@@ -118,6 +120,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeTab, setActiveTab] = useState<TabName>('metrics');
   const [yearFilter, setYearFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState('all');
+  const [techFilter, setTechFilter] = useState('all');
   const [drillDownFilter, setDrillDownFilter] = useState<DrillDownFilter | null>(null);
   const [isGrouped, setIsGrouped] = useState(false);
   const [selectedPests, setSelectedPests] = useState<string[]>([]);
@@ -133,12 +136,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const currentData = useMemo(() => {
     return processedData.filter(d => {
-      if (!d.dateObj) return true;
-      const matchesYear = yearFilter === 'all' || d.dateObj.getFullYear().toString() === yearFilter;
-      const matchesMonth = monthFilter === 'all' || d.dateObj.getMonth().toString() === monthFilter;
-      return matchesYear && matchesMonth;
+      const matchesYear = !d.dateObj || yearFilter === 'all' || d.dateObj.getFullYear().toString() === yearFilter;
+      const matchesMonth = !d.dateObj || monthFilter === 'all' || d.dateObj.getMonth().toString() === monthFilter;
+      const matchesTech = techFilter === 'all' || d.tecnico === techFilter;
+      return matchesYear && matchesMonth && matchesTech;
     });
-  }, [processedData, yearFilter, monthFilter]);
+  }, [processedData, yearFilter, monthFilter, techFilter]);
 
   const metrics = useMemo(() => {
     if (currentData.length === 0) return null;
@@ -176,6 +179,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProcessedDataRaw([]);
     setYearFilter('all');
     setMonthFilter('all');
+    setTechFilter('all');
     setDrillDownFilter(null);
     setSelectedPests([]);
     setAllUniquePests([]);
@@ -185,9 +189,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      processedData, currentData, activeTab, yearFilter, monthFilter,
+      processedData, currentData, activeTab, yearFilter, monthFilter, techFilter,
       drillDownFilter, isGrouped, selectedPests, allUniquePests, metrics,
-      setProcessedData, setActiveTab, setYearFilter, setMonthFilter,
+      setProcessedData, setActiveTab, setYearFilter, setMonthFilter, setTechFilter,
       setDrillDownFilter, toggleGrouping, addPest, removePest,
       handleDrillDown, resetData, getPestName,
     }}>
