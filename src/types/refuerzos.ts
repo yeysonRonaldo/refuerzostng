@@ -22,7 +22,7 @@ export interface RefuerzoRecord {
   _dedupeKey: string;
 }
 
-export type TabName = 'metrics' | 'analysis' | 'routes' | 'reports' | 'database' | 'export' | 'users';
+export type TabName = 'metrics' | 'analysis' | 'routes' | 'reports' | 'techReports' | 'database' | 'export' | 'users';
 
 export interface DrillDownFilter {
   type: string;
