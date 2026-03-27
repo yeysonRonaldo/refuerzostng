@@ -142,18 +142,20 @@ export default function TechReportsView() {
   const exportToExcel = useCallback(() => {
     const wb = XLSX.utils.book_new();
     const periodLabel = getQuarterLabel(monthKeys);
+    const rows: (string | number)[][] = [];
 
     // Sort techs by total desc
     const sortedTechs = [...techsToShow].sort(
       (a, b) => (techTotals[b]?.total || 0) - (techTotals[a]?.total || 0)
     );
 
-    sortedTechs.forEach(tech => {
+    sortedTechs.forEach((tech, idx) => {
       const tt = techTotals[tech] || { alto: 0, medio: 0, bajo: 0, total: 0 };
       const clients = getAllClientsForTech(tech).sort((a, b) => b.totals.total - a.totals.total);
-      const rows: (string | number)[][] = [];
 
-      // Header
+      if (idx > 0) rows.push([]);
+
+      // Tech header
       rows.push([`${tech} tiene un total de ${tt.total} refuerzos en ${periodLabel}`]);
       rows.push([`Alta: ${tt.alto}`, `Media: ${tt.medio}`, `Baja: ${tt.bajo}`]);
       rows.push([]);
@@ -185,21 +187,18 @@ export default function TechReportsView() {
       clients.forEach(c => {
         rows.push([c.cliente, c.direccion, c.lastDate, c.totals.alto, c.totals.medio, c.totals.bajo, c.totals.total]);
       });
-
-      const ws = XLSX.utils.aoa_to_sheet(rows);
-      // Auto column widths
-      const colWidths: number[] = [];
-      rows.forEach(row => {
-        row.forEach((cell, i) => {
-          const len = String(cell).length;
-          colWidths[i] = Math.max(colWidths[i] || 8, len + 2);
-        });
-      });
-      ws['!cols'] = colWidths.map((w: number) => ({ wch: Math.min(w, 40) }));
-
-      const sheetName = tech.substring(0, 31); // Excel limit
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
     });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const colWidths: number[] = [];
+    rows.forEach(row => {
+      row.forEach((cell, i) => {
+        const len = String(cell).length;
+        colWidths[i] = Math.max(colWidths[i] || 8, len + 2);
+      });
+    });
+    ws['!cols'] = colWidths.map((w: number) => ({ wch: Math.min(w, 40) }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Reporte Consolidado');
 
     const date = new Date().toISOString().slice(0, 10);
     XLSX.writeFile(wb, `Reporte_Tecnicos_${date}.xlsx`);
