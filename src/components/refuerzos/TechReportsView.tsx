@@ -241,6 +241,13 @@ export default function TechReportsView() {
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
+        <button
+          onClick={exportToExcel}
+          className="flex items-center gap-2 text-sm px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Descargar Excel
+        </button>
       </div>
 
       {techsToShow.map(tech => {
