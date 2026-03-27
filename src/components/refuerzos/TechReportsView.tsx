@@ -260,20 +260,26 @@ export default function TechReportsView() {
 
         return (
           <div key={tech} className="bg-card border border-border rounded-lg overflow-hidden">
-            {/* Tech header */}
+            {/* Tech header - only name and total */}
             <div
-              className="px-4 py-3 bg-muted/50 border-b border-border cursor-pointer hover:bg-muted/70 transition-colors"
+              className="px-4 py-3 bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors flex items-center justify-between"
               onClick={() => toggleTechExpand(tech)}
             >
               <div className="flex items-center gap-2">
                 {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                 <h3 className="font-semibold text-foreground">{tech}</h3>
               </div>
-              <p className="text-xs text-muted-foreground ml-6">
-                Total: {techTotals[tech]?.total || 0} refuerzos —
-                <span className="text-destructive ml-1">Alta: {techTotals[tech]?.alto || 0}</span>
-                <span className="text-warning ml-2">Media: {techTotals[tech]?.medio || 0}</span>
-                <span className="text-success ml-2">Baja: {techTotals[tech]?.bajo || 0}</span>
+              <span className="font-bold text-foreground text-sm">{techTotals[tech]?.total || 0} refuerzos</span>
+            </div>
+
+            {isExpanded && (
+            <>
+            {/* Severity summary */}
+            <div className="px-4 py-2 border-t border-border bg-muted/30">
+              <p className="text-xs text-muted-foreground">
+                <span className="text-destructive">Alta: {techTotals[tech]?.alto || 0}</span>
+                <span className="text-warning ml-3">Media: {techTotals[tech]?.medio || 0}</span>
+                <span className="text-success ml-3">Baja: {techTotals[tech]?.bajo || 0}</span>
               </p>
             </div>
 
