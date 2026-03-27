@@ -115,7 +115,7 @@ export function parseExcelFile(file: File): Promise<{ records: RefuerzoRecord[];
  * Splits records that have multiple technicians (separated by /, comma, " y ")
  * into individual records, one per technician.
  */
-function splitMultiTechRecords(records: RefuerzoRecord[]): RefuerzoRecord[] {
+export function splitMultiTechRecords(records: RefuerzoRecord[]): RefuerzoRecord[] {
   const result: RefuerzoRecord[] = [];
   let counter = 1;
 
