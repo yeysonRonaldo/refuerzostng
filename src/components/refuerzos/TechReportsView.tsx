@@ -188,14 +188,14 @@ export default function TechReportsView() {
 
       const ws = XLSX.utils.aoa_to_sheet(rows);
       // Auto column widths
-      const colWidths = rows.reduce((acc, row) => {
+      const colWidths: number[] = [];
+      rows.forEach(row => {
         row.forEach((cell, i) => {
           const len = String(cell).length;
-          acc[i] = Math.max(acc[i] || 8, len + 2);
+          colWidths[i] = Math.max(colWidths[i] || 8, len + 2);
         });
-        return acc;
-      }, [] as number[]);
-      ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w, 40) }));
+      });
+      ws['!cols'] = colWidths.map((w: number) => ({ wch: Math.min(w, 40) }));
 
       const sheetName = tech.substring(0, 31); // Excel limit
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
