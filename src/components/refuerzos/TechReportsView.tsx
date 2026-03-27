@@ -161,10 +161,13 @@ export default function TechReportsView() {
       rows.push([]);
 
       // Monthly summary
-      rows.push(['Mes', 'Alta', 'Media', 'Baja', 'Total']);
+      rows.push(['Mes', 'Infestación', 'Total']);
       monthKeys.forEach(mk => {
         const d = techData[tech]?.[mk];
-        if (d) rows.push([formatMonthKey(mk), d.alto, d.medio, d.bajo, d.total]);
+        if (!d) return;
+        if (d.alto > 0) rows.push([formatMonthKey(mk), 'Alta', d.alto]);
+        if (d.medio > 0) rows.push([formatMonthKey(mk), 'Media', d.medio]);
+        if (d.bajo > 0) rows.push([formatMonthKey(mk), 'Baja', d.bajo]);
       });
       rows.push([]);
 
@@ -173,19 +176,24 @@ export default function TechReportsView() {
         const monthClients = getClientsForMonth(tech, mk);
         if (monthClients.length === 0) return;
         rows.push([`Detalle ${formatMonthKey(mk)}`]);
-        rows.push(['Cliente', 'Sucursal', 'Últ. Servicio', 'Alta', 'Media', 'Baja', 'Total']);
+        rows.push(['Cliente', 'Sucursal', 'Últ. Servicio', 'Infestación', 'Total']);
         monthClients.forEach(c => {
           const cm = c.months[mk];
-          rows.push([c.cliente, c.direccion, c.lastDate, cm?.alto || 0, cm?.medio || 0, cm?.bajo || 0, cm?.total || 0]);
+          if (!cm) return;
+          if (cm.alto > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Alta', cm.alto]);
+          if (cm.medio > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Media', cm.medio]);
+          if (cm.bajo > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Baja', cm.bajo]);
         });
         rows.push([]);
       });
 
       // Overall client summary
       rows.push(['Resumen General por Cliente']);
-      rows.push(['Cliente', 'Sucursal', 'Últ. Servicio', 'Alta', 'Media', 'Baja', 'Total']);
+      rows.push(['Cliente', 'Sucursal', 'Últ. Servicio', 'Infestación', 'Total']);
       clients.forEach(c => {
-        rows.push([c.cliente, c.direccion, c.lastDate, c.totals.alto, c.totals.medio, c.totals.bajo, c.totals.total]);
+        if (c.totals.alto > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Alta', c.totals.alto]);
+        if (c.totals.medio > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Media', c.totals.medio]);
+        if (c.totals.bajo > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Baja', c.totals.bajo]);
       });
     });
 
