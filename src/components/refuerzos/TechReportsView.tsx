@@ -132,6 +132,79 @@ export default function TechReportsView() {
     return Object.values(clients).sort((a, b) => b.totals.total - a.totals.total);
   };
 
+  const getQuarterLabel = (months: string[]): string => {
+    if (months.length === 0) return 'el periodo';
+    const first = formatMonthKey(months[0]);
+    const last = formatMonthKey(months[months.length - 1]);
+    return first === last ? first : `${first} - ${last}`;
+  };
+
+  const exportToExcel = useCallback(() => {
+    const wb = XLSX.utils.book_new();
+    const periodLabel = getQuarterLabel(monthKeys);
+
+    // Sort techs by total desc
+    const sortedTechs = [...techsToShow].sort(
+      (a, b) => (techTotals[b]?.total || 0) - (techTotals[a]?.total || 0)
+    );
+
+    sortedTechs.forEach(tech => {
+      const tt = techTotals[tech] || { alto: 0, medio: 0, bajo: 0, total: 0 };
+      const clients = getAllClientsForTech(tech).sort((a, b) => b.totals.total - a.totals.total);
+      const rows: (string | number)[][] = [];
+
+      // Header
+      rows.push([`${tech} tiene un total de ${tt.total} refuerzos en ${periodLabel}`]);
+      rows.push([`Alta: ${tt.alto}`, `Media: ${tt.medio}`, `Baja: ${tt.bajo}`]);
+      rows.push([]);
+
+      // Monthly summary
+      rows.push(['Mes', 'Alta', 'Media', 'Baja', 'Total']);
+      monthKeys.forEach(mk => {
+        const d = techData[tech]?.[mk];
+        if (d) rows.push([formatMonthKey(mk), d.alto, d.medio, d.bajo, d.total]);
+      });
+      rows.push([]);
+
+      // Client detail per month
+      monthKeys.forEach(mk => {
+        const monthClients = getClientsForMonth(tech, mk);
+        if (monthClients.length === 0) return;
+        rows.push([`Detalle ${formatMonthKey(mk)}`]);
+        rows.push(['Cliente', 'Sucursal', 'Últ. Servicio', 'Alta', 'Media', 'Baja', 'Total']);
+        monthClients.forEach(c => {
+          const cm = c.months[mk];
+          rows.push([c.cliente, c.direccion, c.lastDate, cm?.alto || 0, cm?.medio || 0, cm?.bajo || 0, cm?.total || 0]);
+        });
+        rows.push([]);
+      });
+
+      // Overall client summary
+      rows.push(['Resumen General por Cliente']);
+      rows.push(['Cliente', 'Sucursal', 'Últ. Servicio', 'Alta', 'Media', 'Baja', 'Total']);
+      clients.forEach(c => {
+        rows.push([c.cliente, c.direccion, c.lastDate, c.totals.alto, c.totals.medio, c.totals.bajo, c.totals.total]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      // Auto column widths
+      const colWidths = rows.reduce((acc, row) => {
+        row.forEach((cell, i) => {
+          const len = String(cell).length;
+          acc[i] = Math.max(acc[i] || 8, len + 2);
+        });
+        return acc;
+      }, [] as number[]);
+      ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w, 40) }));
+
+      const sheetName = tech.substring(0, 31); // Excel limit
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+
+    const date = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `Reporte_Tecnicos_${date}.xlsx`);
+  }, [techsToShow, techTotals, monthKeys, techData, techClientData]);
+
   const SeverityBadge = ({ value, type }: { value: number; type: 'alto' | 'medio' | 'bajo' }) => {
     if (value === 0) return <span className="text-muted-foreground">0</span>;
     const styles = {
