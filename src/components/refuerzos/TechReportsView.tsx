@@ -92,7 +92,14 @@ export default function TechReportsView() {
     return `${MONTH_NAMES[parseInt(m) - 1]} ${y.slice(2)}`;
   };
 
-  const techsToShow = selectedTech === 'all' ? technicians : [selectedTech];
+  const techsToShow = useMemo(() => {
+    const list = selectedTech === 'all' ? [...technicians] : [selectedTech];
+    return list.sort((a, b) => {
+      const totalA = Object.values(techData[a] || {}).reduce((s, d) => s + d.total, 0);
+      const totalB = Object.values(techData[b] || {}).reduce((s, d) => s + d.total, 0);
+      return totalB - totalA;
+    });
+  }, [selectedTech, technicians, techData]);
 
   const techTotals = useMemo(() => {
     const totals: Record<string, TechMonthData> = {};
