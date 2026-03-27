@@ -19,8 +19,8 @@ interface SidebarProps {
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const {
-    processedData, activeTab, yearFilter, monthFilter,
-    setProcessedData, setActiveTab, setYearFilter, setMonthFilter, resetData,
+    processedData, activeTab, yearFilter, monthFilter, techFilter,
+    setProcessedData, setActiveTab, setYearFilter, setMonthFilter, setTechFilter, resetData,
   } = useAppContext();
   const { isAdmin, logout, user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -56,6 +56,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       .map(d => d.dateObj?.getFullYear() ?? d.anio)
       .filter(Boolean)
   )).sort((a, b) => (b as number) - (a as number));
+
+  const technicians = Array.from(new Set(
+    processedData
+      .map(d => d.tecnico)
+      .filter(t => t && t !== '-')
+  )).sort();
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -165,6 +171,16 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             <option value="all">Todos los Meses</option>
             {MONTH_NAMES.map((m, i) => (
               <option key={i} value={i}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={techFilter}
+            onChange={(e) => setTechFilter(e.target.value)}
+            className="text-sm w-full p-2 rounded-md border border-border bg-card"
+          >
+            <option value="all">Todos los Técnicos</option>
+            {technicians.map(t => (
+              <option key={t} value={t}>{t}</option>
             ))}
           </select>
         </div>
