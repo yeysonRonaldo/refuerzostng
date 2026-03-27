@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { RefuerzoRecord, TabName, DrillDownFilter, MetricCounts, TimelineEntry, PestTrendEntry } from '@/types/refuerzos';
-import { getEffectivePestName } from '@/lib/dataProcessor';
+import { getEffectivePestName, splitMultiTechRecords } from '@/lib/dataProcessor';
 
 interface AppState {
   processedData: RefuerzoRecord[];
@@ -127,8 +127,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [allUniquePests, setAllUniquePests] = useState<string[]>([]);
 
   const setProcessedData = useCallback((data: RefuerzoRecord[]) => {
-    setProcessedDataRaw(data);
-    const pests = computeUniquePests(data, isGrouped);
+    const expanded = splitMultiTechRecords(data);
+    setProcessedDataRaw(expanded);
+    const pests = computeUniquePests(expanded, isGrouped);
     setAllUniquePests(pests);
     setSelectedPests(computeDefaultPests(pests, isGrouped));
     setDrillDownFilter(null);
