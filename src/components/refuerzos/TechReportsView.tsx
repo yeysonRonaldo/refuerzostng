@@ -407,6 +407,8 @@ export default function TechReportsView() {
                 </div>
               </div>
             )}
+            </>
+            )}
           </div>
         );
       })}
