@@ -99,13 +99,50 @@ export function parseExcelFile(file: File): Promise<{ records: RefuerzoRecord[];
           });
         }
 
-        resolve({ records: processed, duplicatesSkipped });
+        // Split records with multiple technicians
+        const expanded = splitMultiTechRecords(processed);
+
+        resolve({ records: expanded, duplicatesSkipped });
       } catch (err) {
         reject(err);
       }
     };
     reader.readAsArrayBuffer(file);
   });
+}
+
+/**
+ * Splits records that have multiple technicians (separated by /, comma, " y ")
+ * into individual records, one per technician.
+ */
+export function splitMultiTechRecords(records: RefuerzoRecord[]): RefuerzoRecord[] {
+  const result: RefuerzoRecord[] = [];
+  let counter = 1;
+
+  for (const rec of records) {
+    const tecnico = rec.tecnico?.trim() || '-';
+    // Split by common separators: slash, comma, " y "
+    const techs = tecnico
+      .split(/[\/,]|\s+y\s+/i)
+      .map(t => t.trim())
+      .filter(t => t.length > 0 && t !== '-');
+
+    if (techs.length <= 1) {
+      result.push({ ...rec, id: `TN${counter}` });
+      counter++;
+    } else {
+      for (const tech of techs) {
+        result.push({
+          ...rec,
+          id: `TN${counter}`,
+          tecnico: tech,
+        });
+        counter++;
+      }
+    }
+  }
+
+  return result;
 }
 
 export function getEffectivePestName(rawName: string, isGrouped: boolean): string {

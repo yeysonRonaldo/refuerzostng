@@ -10,6 +10,7 @@ const DatabaseView = lazy(() => import('@/components/refuerzos/DatabaseView'));
 const UserManagement = lazy(() => import('@/components/refuerzos/UserManagement'));
 const RoutesView = lazy(() => import('@/components/refuerzos/RoutesView'));
 const ReportsView = lazy(() => import('@/components/refuerzos/ReportsView'));
+const TechReportsView = lazy(() => import('@/components/refuerzos/TechReportsView'));
 const ExportView = lazy(() => import('@/components/refuerzos/ExportView'));
 
 const TabFallback = () => (
@@ -33,6 +34,7 @@ export default function Index() {
             {activeTab === 'analysis' && <AnalysisView />}
             {activeTab === 'routes' && <RoutesView />}
             {activeTab === 'reports' && <ReportsView />}
+            {activeTab === 'techReports' && <TechReportsView />}
             {activeTab === 'database' && <DatabaseView />}
             {activeTab === 'export' && <ExportView />}
             {activeTab === 'users' && <UserManagement />}
