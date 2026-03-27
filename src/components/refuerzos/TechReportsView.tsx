@@ -159,40 +159,17 @@ export default function TechReportsView() {
       rows.push([`${tech} — Total: ${tt.total} refuerzos en ${periodLabel} | Alta: ${tt.alto} | Media: ${tt.medio} | Baja: ${tt.bajo}`]);
       const groupStart = rows.length;
 
-      // Monthly summary
-      rows.push(['Mes', 'Infestación', 'Total']);
-      monthKeys.forEach(mk => {
-        const d = techData[tech]?.[mk];
-        if (!d) return;
-        if (d.alto > 0) rows.push([formatMonthKey(mk), 'Alta', d.alto]);
-        if (d.medio > 0) rows.push([formatMonthKey(mk), 'Media', d.medio]);
-        if (d.bajo > 0) rows.push([formatMonthKey(mk), 'Baja', d.bajo]);
-      });
-      rows.push([]);
-
-      // Client detail per month
-      monthKeys.forEach(mk => {
-        const monthClients = getClientsForMonth(tech, mk);
-        if (monthClients.length === 0) return;
-        rows.push([`Detalle ${formatMonthKey(mk)}`]);
-        rows.push(['Cliente', 'Sucursal', 'Últ. Servicio', 'Infestación', 'Total']);
-        monthClients.forEach(c => {
+      // Client list with month column
+      rows.push(['Cliente', 'Sucursal', 'Mes', 'Infestación', 'Total', 'Últ. Servicio']);
+      clients.forEach(c => {
+        const clientMonths = Object.keys(c.months).sort();
+        clientMonths.forEach(mk => {
           const cm = c.months[mk];
           if (!cm) return;
-          if (cm.alto > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Alta', cm.alto]);
-          if (cm.medio > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Media', cm.medio]);
-          if (cm.bajo > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Baja', cm.bajo]);
+          if (cm.alto > 0) rows.push([c.cliente, c.direccion, formatMonthKey(mk), 'Alta', cm.alto, c.lastDate]);
+          if (cm.medio > 0) rows.push([c.cliente, c.direccion, formatMonthKey(mk), 'Media', cm.medio, c.lastDate]);
+          if (cm.bajo > 0) rows.push([c.cliente, c.direccion, formatMonthKey(mk), 'Baja', cm.bajo, c.lastDate]);
         });
-        rows.push([]);
-      });
-
-      // Overall client summary
-      rows.push(['Resumen General por Cliente']);
-      rows.push(['Cliente', 'Sucursal', 'Últ. Servicio', 'Infestación', 'Total']);
-      clients.forEach(c => {
-        if (c.totals.alto > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Alta', c.totals.alto]);
-        if (c.totals.medio > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Media', c.totals.medio]);
-        if (c.totals.bajo > 0) rows.push([c.cliente, c.direccion, c.lastDate, 'Baja', c.totals.bajo]);
       });
 
       const groupEnd = rows.length - 1;
