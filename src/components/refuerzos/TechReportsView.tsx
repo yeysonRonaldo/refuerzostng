@@ -346,6 +346,14 @@ export default function TechReportsView() {
                       </>
                     );
                   })}
+                  {/* Total row */}
+                  <tr className="border-t-2 border-border bg-muted/40">
+                    <td className="px-4 py-2 font-bold text-foreground">Total</td>
+                    <td className="text-center px-3 py-2"><SeverityBadge value={techTotals[tech]?.alto || 0} type="alto" /></td>
+                    <td className="text-center px-3 py-2"><SeverityBadge value={techTotals[tech]?.medio || 0} type="medio" /></td>
+                    <td className="text-center px-3 py-2"><SeverityBadge value={techTotals[tech]?.bajo || 0} type="bajo" /></td>
+                    <td className="text-center px-3 py-2 font-bold text-foreground text-base">{techTotals[tech]?.total || 0}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
