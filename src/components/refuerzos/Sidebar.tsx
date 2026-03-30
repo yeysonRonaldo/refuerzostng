@@ -34,9 +34,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         .then(data => {
           if (data.length > 0) {
             setProcessedData(data);
+            console.log(`[App] Loaded ${data.length} records from Firestore`);
+          } else {
+            console.warn('[App] No records found in Firestore');
           }
         })
-        .catch(err => console.error('Auto-load error:', err))
+        .catch(err => {
+          console.error('Auto-load error:', err);
+          toast.error('Error al cargar datos de Firebase. Intenta recargar la página.');
+        })
         .finally(() => setLoadingFirestore(false));
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
