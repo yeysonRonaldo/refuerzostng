@@ -205,9 +205,41 @@ export default function TechReportsView() {
     ws['!cols'] = colWidths.map((w: number) => ({ wch: Math.min(w, 40) }));
     XLSX.utils.book_append_sheet(wb, ws, 'Reporte Consolidado');
 
+    // --- Sheet 2: Clientes únicos ---
+    const uniqueClientsMap = new Map<string, { cliente: string; direccion: string; tecnico: string; totalRefuerzos: number; ultimoServicio: string }>();
+    currentData.forEach(d => {
+      const key = `${d.cliente}||${d.direccion}`;
+      const existing = uniqueClientsMap.get(key);
+      if (existing) {
+        existing.totalRefuerzos += 1;
+        existing.tecnico = existing.tecnico.includes(d.tecnico) ? existing.tecnico : `${existing.tecnico}, ${d.tecnico}`;
+        if (d.displayDate !== '-') existing.ultimoServicio = d.displayDate;
+      } else {
+        uniqueClientsMap.set(key, {
+          cliente: d.cliente,
+          direccion: d.direccion,
+          tecnico: d.tecnico,
+          totalRefuerzos: 1,
+          ultimoServicio: d.displayDate,
+        });
+      }
+    });
+    const clientRows: (string | number)[][] = [['Cliente', 'Dirección', 'Técnico(s)', 'Total Refuerzos', 'Último Servicio']];
+    Array.from(uniqueClientsMap.values())
+      .sort((a, b) => b.totalRefuerzos - a.totalRefuerzos)
+      .forEach(c => clientRows.push([c.cliente, c.direccion, c.tecnico, c.totalRefuerzos, c.ultimoServicio]));
+    const wsClients = XLSX.utils.aoa_to_sheet(clientRows);
+    wsClients['!cols'] = [{ wch: 30 }, { wch: 35 }, { wch: 25 }, { wch: 16 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, wsClients, 'Clientes Únicos');
+
+    // --- Sheet 3: Base de datos filtrada ---
+    const dbRows = currentData.map(d => d.originalData);
+    const wsDb = XLSX.utils.json_to_sheet(dbRows);
+    XLSX.utils.book_append_sheet(wb, wsDb, 'Base de Datos');
+
     const date = new Date().toISOString().slice(0, 10);
     XLSX.writeFile(wb, `Reporte_Tecnicos_${date}.xlsx`);
-  }, [techsToShow, techTotals, monthKeys, techData, techClientData]);
+  }, [techsToShow, techTotals, monthKeys, techData, techClientData, currentData]);
 
   const SeverityBadge = ({ value, type }: { value: number; type: 'alto' | 'medio' | 'bajo' }) => {
     if (value === 0) return <span className="text-muted-foreground">0</span>;
