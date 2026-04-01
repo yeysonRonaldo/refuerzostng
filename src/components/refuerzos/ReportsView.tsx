@@ -103,6 +103,150 @@ export default function ReportsView() {
       `<th style="padding:6px;text-align:center;color:${PEST_COLORS[i % PEST_COLORS.length]};">${p}</th>`
     ).join('');
 
+    // === SVG Chart Generators ===
+    const svgW = 750, svgH = 250, pad = { top: 20, right: 30, bottom: 50, left: 50 };
+    const chartW = svgW - pad.left - pad.right, chartH = svgH - pad.top - pad.bottom;
+
+    // Severity Line Chart SVG
+    const buildSeverityChart = () => {
+      if (timelineData.length < 2) return '';
+      const maxVal = Math.max(...timelineData.map(t => t.alto + t.medio + t.bajo), 1);
+      const stepX = chartW / Math.max(timelineData.length - 1, 1);
+      const getX = (i: number) => pad.left + i * stepX;
+      const getY = (v: number) => pad.top + chartH - (v / maxVal) * chartH;
+
+      const makeLine = (getData: (t: typeof timelineData[0]) => number, color: string) => {
+        const pts = timelineData.map((t, i) => `${getX(i)},${getY(getData(t))}`).join(' ');
+        const dots = timelineData.map((t, i) => {
+          const val = getData(t);
+          return `<circle cx="${getX(i)}" cy="${getY(val)}" r="3" fill="${color}"/>${val > 0 ? `<text x="${getX(i)}" y="${getY(val) - 8}" text-anchor="middle" font-size="9" fill="${color}">${val}</text>` : ''}`;
+        }).join('');
+        return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/>${dots}`;
+      };
+
+      const xLabels = timelineData.map((t, i) => {
+        const skip = Math.ceil(timelineData.length / 12);
+        if (i % skip !== 0 && i !== timelineData.length - 1) return '';
+        return `<text x="${getX(i)}" y="${svgH - 5}" text-anchor="middle" font-size="9" fill="#64748b" transform="rotate(-35,${getX(i)},${svgH - 10})">${t.label}</text>`;
+      }).join('');
+
+      const gridLines = Array.from({ length: 5 }, (_, i) => {
+        const val = Math.round((maxVal / 4) * i);
+        const y = getY(val);
+        return `<line x1="${pad.left}" y1="${y}" x2="${svgW - pad.right}" y2="${y}" stroke="#e2e8f0" stroke-width="0.5"/>
+                <text x="${pad.left - 5}" y="${y + 3}" text-anchor="end" font-size="9" fill="#94a3b8">${val}</text>`;
+      }).join('');
+
+      return `<svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="margin-bottom:10px;">
+        ${gridLines}
+        ${makeLine(t => t.bajo, '#22c55e')}
+        ${makeLine(t => t.medio, '#f59e0b')}
+        ${makeLine(t => t.alto, '#ef4444')}
+        ${makeLine(t => t.alto + t.medio + t.bajo, '#1e293b')}
+        ${xLabels}
+        <text x="${svgW - 10}" y="${pad.top - 5}" text-anchor="end" font-size="9">
+          <tspan fill="#ef4444">■ Alto</tspan>  <tspan fill="#f59e0b">■ Medio</tspan>  <tspan fill="#22c55e">■ Bajo</tspan>  <tspan fill="#1e293b">■ Total</tspan>
+        </text>
+      </svg>`;
+    };
+
+    // Pest Trend Line Chart SVG
+    const buildPestTrendChart = () => {
+      if (pestTrendData.length < 2 || selectedPests.length === 0) return '';
+      const maxVal = Math.max(...pestTrendData.flatMap(pt => selectedPests.map(p => pt.counts[p] || 0)), 1);
+      const stepX = chartW / Math.max(pestTrendData.length - 1, 1);
+      const getX = (i: number) => pad.left + i * stepX;
+      const getY = (v: number) => pad.top + chartH - (v / maxVal) * chartH;
+
+      const lines = selectedPests.map((pest, pi) => {
+        const color = PEST_COLORS[pi % PEST_COLORS.length];
+        const pts = pestTrendData.map((pt, i) => `${getX(i)},${getY(pt.counts[pest] || 0)}`).join(' ');
+        const dots = pestTrendData.map((pt, i) => {
+          const val = pt.counts[pest] || 0;
+          return val > 0 ? `<circle cx="${getX(i)}" cy="${getY(val)}" r="3" fill="${color}"/>` : '';
+        }).join('');
+        return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/>${dots}`;
+      }).join('');
+
+      const xLabels = pestTrendData.map((pt, i) => {
+        const skip = Math.ceil(pestTrendData.length / 12);
+        if (i % skip !== 0 && i !== pestTrendData.length - 1) return '';
+        return `<text x="${getX(i)}" y="${svgH - 5}" text-anchor="middle" font-size="9" fill="#64748b" transform="rotate(-35,${getX(i)},${svgH - 10})">${pt.label}</text>`;
+      }).join('');
+
+      const legend = selectedPests.map((p, i) =>
+        `<tspan fill="${PEST_COLORS[i % PEST_COLORS.length]}">■ ${p}</tspan>  `
+      ).join('');
+
+      return `<svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="margin-bottom:10px;">
+        ${lines}
+        ${xLabels}
+        <text x="${pad.left}" y="${pad.top - 5}" font-size="9">${legend}</text>
+      </svg>`;
+    };
+
+    // Horizontal Bar Chart SVG
+    const buildBarChart = (title: string, data: [string, number][], color: string) => {
+      if (data.length === 0) return '';
+      const maxVal = Math.max(...data.map(d => d[1]), 1);
+      const barH = 22, gap = 4, labelW = 180;
+      const totalH = data.length * (barH + gap) + 30;
+      const barArea = svgW - labelW - 60;
+
+      const bars = data.map(([label, val], i) => {
+        const y = 25 + i * (barH + gap);
+        const w = (val / maxVal) * barArea;
+        const displayLabel = label.length > 25 ? label.substring(0, 22) + '...' : label;
+        return `<text x="${labelW - 5}" y="${y + 15}" text-anchor="end" font-size="10" fill="#334155">${displayLabel}</text>
+                <rect x="${labelW}" y="${y}" width="${w}" height="${barH}" rx="3" fill="${color}" opacity="0.8"/>
+                <text x="${labelW + w + 5}" y="${y + 15}" font-size="10" fill="#334155" font-weight="600">${val}</text>`;
+      }).join('');
+
+      return `<div style="margin-bottom:15px;">
+        <h3 style="font-size:0.9rem;color:#1e293b;margin-bottom:5px;">${title}</h3>
+        <svg width="100%" viewBox="0 0 ${svgW} ${totalH}">${bars}</svg>
+      </div>`;
+    };
+
+    // Donut chart for severity distribution
+    const buildDonutChart = () => {
+      const total = metrics.high + metrics.mid + metrics.low;
+      if (total === 0) return '';
+      const cx = 90, cy = 90, r = 70, r2 = 45;
+      const segments = [
+        { val: metrics.high, color: '#ef4444', label: 'Alto' },
+        { val: metrics.mid, color: '#f59e0b', label: 'Medio' },
+        { val: metrics.low, color: '#22c55e', label: 'Bajo' },
+      ];
+      let startAngle = -90;
+      const paths = segments.map(seg => {
+        const angle = (seg.val / total) * 360;
+        const endAngle = startAngle + angle;
+        const largeArc = angle > 180 ? 1 : 0;
+        const x1 = cx + r * Math.cos((startAngle * Math.PI) / 180);
+        const y1 = cy + r * Math.sin((startAngle * Math.PI) / 180);
+        const x2 = cx + r * Math.cos((endAngle * Math.PI) / 180);
+        const y2 = cy + r * Math.sin((endAngle * Math.PI) / 180);
+        const ix1 = cx + r2 * Math.cos((endAngle * Math.PI) / 180);
+        const iy1 = cy + r2 * Math.sin((endAngle * Math.PI) / 180);
+        const ix2 = cx + r2 * Math.cos((startAngle * Math.PI) / 180);
+        const iy2 = cy + r2 * Math.sin((startAngle * Math.PI) / 180);
+        const path = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${r2} ${r2} 0 ${largeArc} 0 ${ix2} ${iy2} Z`;
+        startAngle = endAngle;
+        return `<path d="${path}" fill="${seg.color}"/>`;
+      }).join('');
+
+      const legendItems = segments.map((s, i) =>
+        `<text x="200" y="${55 + i * 25}" font-size="12" fill="#334155"><tspan fill="${s.color}" font-size="14">●</tspan> ${s.label}: ${s.val} (${((s.val / total) * 100).toFixed(1)}%)</text>`
+      ).join('');
+
+      return `<svg width="350" height="180" viewBox="0 0 350 180">
+        ${paths}
+        <text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="16" font-weight="700" fill="#1e293b">${total}</text>
+        ${legendItems}
+      </svg>`;
+    };
+
     const html = `
       <div style="font-family:'Segoe UI',system-ui,sans-serif;max-width:900px;margin:0 auto;padding:30px;">
         <!-- Header -->
@@ -146,6 +290,29 @@ export default function ReportsView() {
           <p style="margin:0 0 8px;"><strong>Plaga predominante:</strong> ${topPests[0] ? `${topPests[0][0]} (${topPests[0][1]} casos)` : 'N/A'}</p>
           <p style="margin:0;"><strong>Cliente más recurrente:</strong> ${topClients[0] ? `${topClients[0][0]} (${topClients[0][1]} registros)` : 'N/A'}</p>
         </div>
+
+        <!-- Severity Donut -->
+        <div style="text-align:center;margin-bottom:20px;">
+          ${buildDonutChart()}
+        </div>
+
+        <!-- Severity Line Chart -->
+        ${timelineData.length >= 2 ? `
+        <h2 style="font-size:1rem;color:#1e293b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">Gráfica: Línea de Tiempo por Gravedad</h2>
+        <div style="margin-bottom:20px;">${buildSeverityChart()}</div>
+        ` : ''}
+
+        <!-- Pest Trend Chart -->
+        ${pestTrendData.length >= 2 && selectedPests.length > 0 ? `
+        <h2 style="font-size:1rem;color:#1e293b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">Gráfica: Tendencia por Plaga</h2>
+        <div style="margin-bottom:20px;">${buildPestTrendChart()}</div>
+        ` : ''}
+
+        <!-- Bar Charts -->
+        <h2 style="font-size:1rem;color:#1e293b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">Gráficas de Distribución</h2>
+        ${buildBarChart('Top Clientes Recurrentes', topClients, '#3b82f6')}
+        ${buildBarChart('Top Plagas', topPests, '#8b5cf6')}
+        ${buildBarChart('Técnicos con Más Servicios', topTechs, '#0ea5e9')}
 
         <!-- Top Plagas & Top Clientes side by side -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px;">
