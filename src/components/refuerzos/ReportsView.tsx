@@ -291,6 +291,29 @@ export default function ReportsView() {
           <p style="margin:0;"><strong>Cliente más recurrente:</strong> ${topClients[0] ? `${topClients[0][0]} (${topClients[0][1]} registros)` : 'N/A'}</p>
         </div>
 
+        <!-- Severity Donut -->
+        <div style="text-align:center;margin-bottom:20px;">
+          ${buildDonutChart()}
+        </div>
+
+        <!-- Severity Line Chart -->
+        ${timelineData.length >= 2 ? `
+        <h2 style="font-size:1rem;color:#1e293b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">Gráfica: Línea de Tiempo por Gravedad</h2>
+        <div style="margin-bottom:20px;">${buildSeverityChart()}</div>
+        ` : ''}
+
+        <!-- Pest Trend Chart -->
+        ${pestTrendData.length >= 2 && selectedPests.length > 0 ? `
+        <h2 style="font-size:1rem;color:#1e293b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">Gráfica: Tendencia por Plaga</h2>
+        <div style="margin-bottom:20px;">${buildPestTrendChart()}</div>
+        ` : ''}
+
+        <!-- Bar Charts -->
+        <h2 style="font-size:1rem;color:#1e293b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">Gráficas de Distribución</h2>
+        ${buildBarChart('Top Clientes Recurrentes', topClients, '#3b82f6')}
+        ${buildBarChart('Top Plagas', topPests, '#8b5cf6')}
+        ${buildBarChart('Técnicos con Más Servicios', topTechs, '#0ea5e9')}
+
         <!-- Top Plagas & Top Clientes side by side -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px;">
           <div>
