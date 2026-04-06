@@ -112,6 +112,8 @@ export default function DatabaseView() {
     { key: 'plaga', label: 'Plaga' },
     { key: 'gravedad', label: 'Gravedad' },
     { key: 'direccion', label: 'Dirección' },
+    { key: 'causaRefuerzo', label: 'Causa de Refuerzo' },
+    { key: 'observaciones', label: 'Observaciones' },
   ];
 
   const gravTagClass = (g: string) => {
