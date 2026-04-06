@@ -299,23 +299,41 @@ export default function ReportsView() {
 
         <!-- Client Group Summary -->
         ${(() => {
-          const groups = computeClientGroupStats(currentData).filter(g => g.total > 0);
+          const groups = computeClientGroupFull(currentData).filter(g => g.total > 0);
           if (groups.length === 0) return '';
           return `
             <h2 style="font-size:1rem;color:#1e293b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">Resumen por Grupo de Cliente</h2>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin-bottom:20px;">
-              ${groups.map(g => `
-                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;">
-                  <div style="font-weight:700;font-size:0.95rem;margin-bottom:10px;color:#1e293b;">${g.name}</div>
-                  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;">
-                    <div><div style="font-size:1.3rem;font-weight:700;color:#ef4444;">${g.alto}</div><div style="font-size:0.65rem;color:#64748b;">Alto</div></div>
-                    <div><div style="font-size:1.3rem;font-weight:700;color:#f59e0b;">${g.medio}</div><div style="font-size:0.65rem;color:#64748b;">Medio</div></div>
-                    <div><div style="font-size:1.3rem;font-weight:700;color:#22c55e;">${g.bajo}</div><div style="font-size:0.65rem;color:#64748b;">Bajo</div></div>
-                    <div><div style="font-size:1.3rem;font-weight:700;color:#1e293b;">${g.total}</div><div style="font-size:0.65rem;color:#64748b;">Total</div></div>
-                  </div>
+            ${groups.map(g => `
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:15px;">
+                <div style="font-weight:700;font-size:0.95rem;margin-bottom:10px;color:#1e293b;">${g.name}</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;margin-bottom:12px;">
+                  <div><div style="font-size:1.3rem;font-weight:700;color:#ef4444;">${g.alto}</div><div style="font-size:0.65rem;color:#64748b;">Alto</div></div>
+                  <div><div style="font-size:1.3rem;font-weight:700;color:#f59e0b;">${g.medio}</div><div style="font-size:0.65rem;color:#64748b;">Medio</div></div>
+                  <div><div style="font-size:1.3rem;font-weight:700;color:#22c55e;">${g.bajo}</div><div style="font-size:0.65rem;color:#64748b;">Bajo</div></div>
+                  <div><div style="font-size:1.3rem;font-weight:700;color:#1e293b;">${g.total}</div><div style="font-size:0.65rem;color:#64748b;">Total</div></div>
                 </div>
-              `).join('')}
-            </div>
+                ${g.monthly.length > 0 ? `
+                <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+                  <tr style="background:#f1f5f9;">
+                    <th style="padding:6px;text-align:left;">Mes</th>
+                    <th style="padding:6px;text-align:center;color:#ef4444;">Alto</th>
+                    <th style="padding:6px;text-align:center;color:#f59e0b;">Medio</th>
+                    <th style="padding:6px;text-align:center;color:#22c55e;">Bajo</th>
+                    <th style="padding:6px;text-align:center;">Total</th>
+                  </tr>
+                  ${g.monthly.map(m => `
+                    <tr style="border-bottom:1px solid #f1f5f9;">
+                      <td style="padding:6px;">${m.label}</td>
+                      <td style="padding:6px;text-align:center;font-weight:600;color:#ef4444;">${m.alto}</td>
+                      <td style="padding:6px;text-align:center;font-weight:600;color:#f59e0b;">${m.medio}</td>
+                      <td style="padding:6px;text-align:center;font-weight:600;color:#22c55e;">${m.bajo}</td>
+                      <td style="padding:6px;text-align:center;font-weight:700;">${m.total}</td>
+                    </tr>
+                  `).join('')}
+                </table>
+                ` : ''}
+              </div>
+            `).join('')}
           `;
         })()}
 
