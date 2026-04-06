@@ -81,6 +81,7 @@ export function computeClientGroupFull(data: RefuerzoRecord[]): ClientGroupFull[
       if (r.gravedad === 'Alto') stats.alto++;
       else if (r.gravedad === 'Medio') stats.medio++;
       else stats.bajo++;
+      stats.records.push({ cliente: r.cliente, codigoCliente: r.codigoCliente, tecnico: r.tecnico, gravedad: r.gravedad, displayDate: r.displayDate, plaga: r.plaga });
 
       if (r.dateObj) {
         const y = r.dateObj.getFullYear();
