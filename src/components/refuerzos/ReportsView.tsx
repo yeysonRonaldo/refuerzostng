@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { useAppContext, PEST_COLORS } from '@/context/AppContext';
+import { computeClientGroupStats } from '@/lib/clientGroups';
 import { RefuerzoRecord } from '@/types/refuerzos';
 import { Eye, Printer } from 'lucide-react';
 import { toast } from 'sonner';
@@ -295,6 +296,28 @@ export default function ReportsView() {
         <div style="text-align:center;margin-bottom:20px;">
           ${buildDonutChart()}
         </div>
+
+        <!-- Client Group Summary -->
+        ${(() => {
+          const groups = computeClientGroupStats(currentData).filter(g => g.total > 0);
+          if (groups.length === 0) return '';
+          return `
+            <h2 style="font-size:1rem;color:#1e293b;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">Resumen por Grupo de Cliente</h2>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin-bottom:20px;">
+              ${groups.map(g => `
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;">
+                  <div style="font-weight:700;font-size:0.95rem;margin-bottom:10px;color:#1e293b;">${g.name}</div>
+                  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;">
+                    <div><div style="font-size:1.3rem;font-weight:700;color:#ef4444;">${g.alto}</div><div style="font-size:0.65rem;color:#64748b;">Alto</div></div>
+                    <div><div style="font-size:1.3rem;font-weight:700;color:#f59e0b;">${g.medio}</div><div style="font-size:0.65rem;color:#64748b;">Medio</div></div>
+                    <div><div style="font-size:1.3rem;font-weight:700;color:#22c55e;">${g.bajo}</div><div style="font-size:0.65rem;color:#64748b;">Bajo</div></div>
+                    <div><div style="font-size:1.3rem;font-weight:700;color:#1e293b;">${g.total}</div><div style="font-size:0.65rem;color:#64748b;">Total</div></div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        })()}
 
         <!-- Severity Line Chart -->
         ${timelineData.length >= 2 ? `
