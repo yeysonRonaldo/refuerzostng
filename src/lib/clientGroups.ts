@@ -29,6 +29,15 @@ export interface ClientGroupMonthly {
   total: number;
 }
 
+export interface ClientGroupRecord {
+  cliente: string;
+  codigoCliente: string;
+  tecnico: string;
+  gravedad: string;
+  displayDate: string;
+  plaga: string;
+}
+
 export interface ClientGroupFull {
   name: string;
   alto: number;
@@ -36,6 +45,7 @@ export interface ClientGroupFull {
   bajo: number;
   total: number;
   monthly: ClientGroupMonthly[];
+  records: ClientGroupRecord[];
 }
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -59,7 +69,7 @@ export function computeClientGroupStats(data: RefuerzoRecord[]): ClientGroupStat
 
 export function computeClientGroupFull(data: RefuerzoRecord[]): ClientGroupFull[] {
   return CLIENT_GROUPS.map(group => {
-    const stats: ClientGroupFull = { name: group.name, alto: 0, medio: 0, bajo: 0, total: 0, monthly: [] };
+    const stats: ClientGroupFull = { name: group.name, alto: 0, medio: 0, bajo: 0, total: 0, monthly: [], records: [] };
     const monthMap: Record<string, ClientGroupMonthly> = {};
 
     data.forEach(r => {
@@ -71,6 +81,7 @@ export function computeClientGroupFull(data: RefuerzoRecord[]): ClientGroupFull[
       if (r.gravedad === 'Alto') stats.alto++;
       else if (r.gravedad === 'Medio') stats.medio++;
       else stats.bajo++;
+      stats.records.push({ cliente: r.cliente, codigoCliente: r.codigoCliente, tecnico: r.tecnico, gravedad: r.gravedad, displayDate: r.displayDate, plaga: r.plaga });
 
       if (r.dateObj) {
         const y = r.dateObj.getFullYear();

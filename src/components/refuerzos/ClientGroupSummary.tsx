@@ -43,33 +43,35 @@ export default function ClientGroupSummary() {
                 </div>
               </div>
             </PopoverTrigger>
-            <PopoverContent className="w-80 max-h-72 overflow-y-auto" align="center">
-              <h4 className="font-bold text-sm text-foreground mb-2">{g.name} — Desglose Mensual</h4>
-              {g.monthly.length > 0 ? (
+            <PopoverContent className="w-[420px] max-h-80 overflow-y-auto" align="center">
+              <h4 className="font-bold text-sm text-foreground mb-2">{g.name} — Detalle de Registros</h4>
+              {g.records.length > 0 ? (
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="text-muted-foreground">
-                      <th className="text-left py-1 font-medium">Mes</th>
-                      <th className="text-center py-1 font-medium text-destructive">Alto</th>
-                      <th className="text-center py-1 font-medium text-yellow-500">Medio</th>
-                      <th className="text-center py-1 font-medium text-green-500">Bajo</th>
-                      <th className="text-center py-1 font-medium">Total</th>
+                      <th className="text-left py-1 font-medium">Fecha</th>
+                      <th className="text-left py-1 font-medium">Cliente</th>
+                      <th className="text-left py-1 font-medium">Código</th>
+                      <th className="text-left py-1 font-medium">Técnico</th>
+                      <th className="text-center py-1 font-medium">Gravedad</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {g.monthly.map(m => (
-                      <tr key={m.sortKey} className="border-t border-border/50">
-                        <td className="py-1.5 text-foreground">{m.label}</td>
-                        <td className="text-center py-1.5 font-semibold text-destructive">{m.alto}</td>
-                        <td className="text-center py-1.5 font-semibold text-yellow-500">{m.medio}</td>
-                        <td className="text-center py-1.5 font-semibold text-green-500">{m.bajo}</td>
-                        <td className="text-center py-1.5 font-bold text-foreground">{m.total}</td>
+                    {g.records.map((rec, i) => (
+                      <tr key={i} className="border-t border-border/50">
+                        <td className="py-1.5 text-foreground">{rec.displayDate}</td>
+                        <td className="py-1.5 text-foreground truncate max-w-[100px]" title={rec.cliente}>{rec.cliente}</td>
+                        <td className="py-1.5 text-foreground">{rec.codigoCliente}</td>
+                        <td className="py-1.5 text-foreground">{rec.tecnico}</td>
+                        <td className="text-center py-1.5">
+                          <span className={`text-[0.6rem] font-bold px-1.5 py-0.5 rounded ${rec.gravedad === 'Alto' ? 'bg-destructive/20 text-destructive' : rec.gravedad === 'Medio' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-green-500/20 text-green-500'}`}>{rec.gravedad}</span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               ) : (
-                <p className="text-xs text-muted-foreground">Sin datos mensuales disponibles.</p>
+                <p className="text-xs text-muted-foreground">Sin registros disponibles.</p>
               )}
             </PopoverContent>
           </Popover>
