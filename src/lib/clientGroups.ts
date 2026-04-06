@@ -69,7 +69,7 @@ export function computeClientGroupStats(data: RefuerzoRecord[]): ClientGroupStat
 
 export function computeClientGroupFull(data: RefuerzoRecord[]): ClientGroupFull[] {
   return CLIENT_GROUPS.map(group => {
-    const stats: ClientGroupFull = { name: group.name, alto: 0, medio: 0, bajo: 0, total: 0, monthly: [] };
+    const stats: ClientGroupFull = { name: group.name, alto: 0, medio: 0, bajo: 0, total: 0, monthly: [], records: [] };
     const monthMap: Record<string, ClientGroupMonthly> = {};
 
     data.forEach(r => {
