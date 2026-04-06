@@ -6,6 +6,8 @@ import {
   getDocsFromCache,
   writeBatch,
   query,
+  where,
+  updateDoc,
 } from 'firebase/firestore';
 import { RefuerzoRecord } from '@/types/refuerzos';
 
