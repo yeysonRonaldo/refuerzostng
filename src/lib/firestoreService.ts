@@ -61,6 +61,8 @@ function deserializeRecord(data: Record<string, unknown>): RefuerzoRecord {
     diasActivos: Number(data.diasActivos) || 0,
     recomendaciones: String(data.recomendaciones || '-'),
     recomendacionesTotales: Number(data.recomendacionesTotales) || 0,
+    observaciones: String(data.observaciones || '-'),
+    causaRefuerzo: String(data.causaRefuerzo || '-'),
     originalData: data,
     _dedupeKey: String(data._dedupeKey || ''),
   };
