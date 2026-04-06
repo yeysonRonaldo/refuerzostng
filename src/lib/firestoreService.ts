@@ -180,3 +180,19 @@ export async function clearFirestoreData(): Promise<void> {
   }
   dedupeKeyCache = null;
 }
+
+/**
+ * Update a single field on a record identified by its _dedupeKey
+ */
+export async function updateRecordFieldInFirestore(
+  dedupeKey: string,
+  field: string,
+  value: string
+): Promise<void> {
+  const dataCol = getDataCollection();
+  const q = query(dataCol, where('_dedupeKey', '==', dedupeKey));
+  const snapshot = await getDocs(q);
+  for (const docSnap of snapshot.docs) {
+    await updateDoc(docSnap.ref, { [field]: value });
+  }
+}
