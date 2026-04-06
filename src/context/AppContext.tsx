@@ -190,13 +190,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const getPestName = useCallback((raw: string) => getEffectivePestName(raw, isGrouped), [isGrouped]);
 
+  const updateRecordField = useCallback((dedupeKey: string, field: 'observaciones' | 'causaRefuerzo', value: string) => {
+    setProcessedDataRaw(prev => prev.map(r => r._dedupeKey === dedupeKey ? { ...r, [field]: value } : r));
+    updateRecordFieldInFirestore(dedupeKey, field, value).catch(err => console.warn('Failed to update Firestore:', err));
+  }, []);
+
   return (
     <AppContext.Provider value={{
       processedData, currentData, activeTab, yearFilter, monthFilter, techFilter,
       drillDownFilter, isGrouped, selectedPests, allUniquePests, metrics,
       setProcessedData, setActiveTab, setYearFilter, setMonthFilter, setTechFilter,
       setDrillDownFilter, toggleGrouping, addPest, removePest,
-      handleDrillDown, resetData, getPestName,
+      handleDrillDown, resetData, getPestName, updateRecordField,
     }}>
       {children}
     </AppContext.Provider>
