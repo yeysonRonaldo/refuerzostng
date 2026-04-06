@@ -4,6 +4,7 @@ import SeverityLineChart from './SeverityLineChart';
 import PestTrendChart from './PestTrendChart';
 import PriorityList from './PriorityList';
 import BarChart from './BarChart';
+import ClientGroupSummary from './ClientGroupSummary';
 import { useAppContext } from '@/context/AppContext';
 
 export default function MetricsView() {
@@ -13,6 +14,7 @@ export default function MetricsView() {
     <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
       <InsightCard />
       <StatsCards />
+      <ClientGroupSummary />
       <PestTrendChart />
       <SeverityLineChart />
       <PriorityList />
