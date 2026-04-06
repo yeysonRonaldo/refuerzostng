@@ -29,6 +29,15 @@ export interface ClientGroupMonthly {
   total: number;
 }
 
+export interface ClientGroupRecord {
+  cliente: string;
+  codigoCliente: string;
+  tecnico: string;
+  gravedad: string;
+  displayDate: string;
+  plaga: string;
+}
+
 export interface ClientGroupFull {
   name: string;
   alto: number;
@@ -36,6 +45,7 @@ export interface ClientGroupFull {
   bajo: number;
   total: number;
   monthly: ClientGroupMonthly[];
+  records: ClientGroupRecord[];
 }
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
