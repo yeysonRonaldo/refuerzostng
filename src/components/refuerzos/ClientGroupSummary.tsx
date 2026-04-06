@@ -82,7 +82,7 @@ export default function ClientGroupSummary() {
                       {filtered.map((rec, i) => (
                         <tr key={i} className="border-t border-border/50">
                           <td className="py-1.5 text-foreground">{rec.displayDate}</td>
-                          <td className="py-1.5 text-foreground truncate max-w-[100px]" title={rec.cliente}>{rec.cliente}</td>
+                          <td className="py-1.5 text-foreground max-w-[160px]" title={rec.cliente}>{rec.cliente}</td>
                           <td className="py-1.5 text-foreground">{rec.codigoCliente}</td>
                           <td className="py-1.5 text-foreground">{rec.tecnico}</td>
                           <td className="text-center py-1.5">
