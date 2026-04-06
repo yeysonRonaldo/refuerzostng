@@ -190,7 +190,7 @@ export default function DatabaseView() {
             </thead>
             <tbody>
               {pageData.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-8 text-muted-foreground/40">No hay resultados</td></tr>
+                <tr><td colSpan={9} className="text-center py-8 text-muted-foreground/40">No hay resultados</td></tr>
               ) : (
                 pageData.map(r => (
                   <tr key={r.id} className="border-b border-border/50 hover:bg-accent/30">
