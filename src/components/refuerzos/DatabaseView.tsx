@@ -112,6 +112,8 @@ export default function DatabaseView() {
     { key: 'plaga', label: 'Plaga' },
     { key: 'gravedad', label: 'Gravedad' },
     { key: 'direccion', label: 'Dirección' },
+    { key: 'causaRefuerzo', label: 'Causa de Refuerzo' },
+    { key: 'observaciones', label: 'Observaciones' },
   ];
 
   const gravTagClass = (g: string) => {
@@ -188,7 +190,7 @@ export default function DatabaseView() {
             </thead>
             <tbody>
               {pageData.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-8 text-muted-foreground/40">No hay resultados</td></tr>
+                <tr><td colSpan={9} className="text-center py-8 text-muted-foreground/40">No hay resultados</td></tr>
               ) : (
                 pageData.map(r => (
                   <tr key={r.id} className="border-b border-border/50 hover:bg-accent/30">
@@ -204,6 +206,8 @@ export default function DatabaseView() {
                       <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${gravTagClass(r.gravedad)}`}>{r.gravedad}</span>
                     </td>
                     <td className="p-2 text-xs text-muted-foreground max-w-[200px] truncate">{r.direccion}</td>
+                    <td className="p-2 text-xs text-muted-foreground max-w-[180px] truncate" title={r.causaRefuerzo}>{r.causaRefuerzo}</td>
+                    <td className="p-2 text-xs text-muted-foreground max-w-[200px] truncate" title={r.observaciones}>{r.observaciones}</td>
                   </tr>
                 ))
               )}

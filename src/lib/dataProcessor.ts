@@ -94,6 +94,8 @@ export function parseExcelFile(file: File): Promise<{ records: RefuerzoRecord[];
             diasActivos: parseInt(String(row['Días Activos'])) || 0,
             recomendaciones: String(row['Recomendaciones'] || '-'),
             recomendacionesTotales: parseInt(String(row['Recomendaciones totales'])) || 0,
+            observaciones: String(row['Observaciones'] || row['Observacion'] || '-'),
+            causaRefuerzo: String(row['Causa de Refuerzo'] || row['Causa Refuerzo'] || '-'),
             originalData: row,
             _dedupeKey: dedupeKey,
           });
