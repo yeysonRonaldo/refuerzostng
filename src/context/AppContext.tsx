@@ -29,6 +29,7 @@ interface AppContextType extends AppState {
   handleDrillDown: (type: string, value: string, extra?: string) => void;
   resetData: () => void;
   getPestName: (raw: string) => string;
+  updateRecordField: (dedupeKey: string, field: 'observaciones' | 'causaRefuerzo', value: string) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
