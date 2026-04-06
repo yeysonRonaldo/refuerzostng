@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { useAppContext, PEST_COLORS } from '@/context/AppContext';
-import { computeClientGroupStats } from '@/lib/clientGroups';
+import { computeClientGroupFull } from '@/lib/clientGroups';
 import { RefuerzoRecord } from '@/types/refuerzos';
 import { Eye, Printer } from 'lucide-react';
 import { toast } from 'sonner';
