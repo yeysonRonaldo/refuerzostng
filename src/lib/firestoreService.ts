@@ -34,6 +34,8 @@ function serializeRecord(record: RefuerzoRecord): Record<string, unknown> {
     diasActivos: record.diasActivos,
     recomendaciones: record.recomendaciones,
     recomendacionesTotales: record.recomendacionesTotales,
+    observaciones: record.observaciones,
+    causaRefuerzo: record.causaRefuerzo,
     _dedupeKey: record._dedupeKey,
   };
 }
