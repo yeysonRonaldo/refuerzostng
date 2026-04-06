@@ -4,8 +4,41 @@ import { RefuerzoRecord } from '@/types/refuerzos';
 
 const ROWS_PER_PAGE = 100;
 
+function EditableCell({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const commit = () => {
+    setEditing(false);
+    if (draft !== value) onSave(draft);
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value); setEditing(false); } }}
+        className="w-full px-1 py-0.5 text-xs border border-primary rounded bg-card focus:outline-none"
+      />
+    );
+  }
+
+  return (
+    <span
+      onClick={() => { setDraft(value); setEditing(true); }}
+      className="cursor-pointer hover:bg-accent/50 px-1 py-0.5 rounded block truncate"
+      title={`${value || '-'} (clic para editar)`}
+    >
+      {value || '-'}
+    </span>
+  );
+}
+
 export default function DatabaseView() {
-  const { currentData, drillDownFilter, setDrillDownFilter, getPestName, handleDrillDown } = useAppContext();
+  const { currentData, drillDownFilter, setDrillDownFilter, getPestName, handleDrillDown, updateRecordField } = useAppContext();
   const [page, setPage] = useState(1);
   const [tableFilters, setTableFilters] = useState<Record<string, string>>({});
   const [sortConfig, setSortConfig] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
@@ -167,7 +200,7 @@ export default function DatabaseView() {
             <p>Carga un archivo Excel/CSV para ver la base de datos.</p>
           </div>
         ) : (
-          <table className="w-full text-xs sm:text-sm border-collapse min-w-[700px]">
+          <table className="w-full text-xs sm:text-sm border-collapse min-w-[900px]">
             <thead className="bg-accent/50 sticky top-0">
               <tr>
                 {columns.map(col => (
@@ -193,7 +226,7 @@ export default function DatabaseView() {
                 <tr><td colSpan={9} className="text-center py-8 text-muted-foreground/40">No hay resultados</td></tr>
               ) : (
                 pageData.map(r => (
-                  <tr key={r.id} className="border-b border-border/50 hover:bg-accent/30">
+                  <tr key={r._dedupeKey + r.id} className="border-b border-border/50 hover:bg-accent/30">
                     <td className="p-2 font-bold">{r.id}</td>
                     <td className="p-2 whitespace-nowrap">{r.displayDate}</td>
                     <td className="p-2 max-w-[200px] truncate">{r.cliente}</td>
@@ -206,8 +239,18 @@ export default function DatabaseView() {
                       <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${gravTagClass(r.gravedad)}`}>{r.gravedad}</span>
                     </td>
                     <td className="p-2 text-xs text-muted-foreground max-w-[200px] truncate">{r.direccion}</td>
-                    <td className="p-2 text-xs text-muted-foreground max-w-[180px] truncate" title={r.causaRefuerzo}>{r.causaRefuerzo}</td>
-                    <td className="p-2 text-xs text-muted-foreground max-w-[200px] truncate" title={r.observaciones}>{r.observaciones}</td>
+                    <td className="p-2 text-xs max-w-[180px]">
+                      <EditableCell
+                        value={r.causaRefuerzo}
+                        onSave={v => updateRecordField(r._dedupeKey, 'causaRefuerzo', v)}
+                      />
+                    </td>
+                    <td className="p-2 text-xs max-w-[200px]">
+                      <EditableCell
+                        value={r.observaciones}
+                        onSave={v => updateRecordField(r._dedupeKey, 'observaciones', v)}
+                      />
+                    </td>
                   </tr>
                 ))
               )}
