@@ -49,7 +49,7 @@ export default function ClientGroupSummary() {
                   </div>
                 </div>
               </PopoverTrigger>
-              <PopoverContent className="w-[420px] max-h-80 overflow-y-auto" align="center">
+              <PopoverContent className="w-[520px] max-h-80 overflow-y-auto" align="center">
                 <h4 className="font-bold text-sm text-foreground mb-2">{g.name} — {severityFilter && severityFilter !== 'total' ? `Solo ${severityFilter}` : 'Todos'}</h4>
                 <div className="flex gap-1 mb-2">
                   {[
