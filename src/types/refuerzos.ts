@@ -17,6 +17,8 @@ export interface RefuerzoRecord {
   diasActivos: number;
   recomendaciones: string;
   recomendacionesTotales: number;
+  observaciones: string;
+  causaRefuerzo: string;
   originalData: Record<string, unknown>;
   // Composite key for dedup
   _dedupeKey: string;
