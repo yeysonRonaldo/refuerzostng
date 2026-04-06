@@ -2,10 +2,9 @@ import { RefuerzoRecord } from '@/types/refuerzos';
 
 export interface ClientGroup {
   name: string;
-  keywords: string[]; // if client name contains any of these (case-insensitive), it matches
+  keywords: string[];
 }
 
-// Add more groups here as needed
 export const CLIENT_GROUPS: ClientGroup[] = [
   {
     name: 'POLLO GRANJERO',
@@ -21,6 +20,26 @@ export interface ClientGroupStats {
   total: number;
 }
 
+export interface ClientGroupMonthly {
+  label: string;
+  sortKey: string;
+  alto: number;
+  medio: number;
+  bajo: number;
+  total: number;
+}
+
+export interface ClientGroupFull {
+  name: string;
+  alto: number;
+  medio: number;
+  bajo: number;
+  total: number;
+  monthly: ClientGroupMonthly[];
+}
+
+const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
 export function computeClientGroupStats(data: RefuerzoRecord[]): ClientGroupStats[] {
   return CLIENT_GROUPS.map(group => {
     const stats: ClientGroupStats = { name: group.name, alto: 0, medio: 0, bajo: 0, total: 0 };
@@ -34,6 +53,40 @@ export function computeClientGroupStats(data: RefuerzoRecord[]): ClientGroupStat
         else stats.bajo++;
       }
     });
+    return stats;
+  });
+}
+
+export function computeClientGroupFull(data: RefuerzoRecord[]): ClientGroupFull[] {
+  return CLIENT_GROUPS.map(group => {
+    const stats: ClientGroupFull = { name: group.name, alto: 0, medio: 0, bajo: 0, total: 0, monthly: [] };
+    const monthMap: Record<string, ClientGroupMonthly> = {};
+
+    data.forEach(r => {
+      const clientLower = (r.cliente || '').toLowerCase();
+      const matches = group.keywords.some(kw => clientLower.includes(kw));
+      if (!matches) return;
+
+      stats.total++;
+      if (r.gravedad === 'Alto') stats.alto++;
+      else if (r.gravedad === 'Medio') stats.medio++;
+      else stats.bajo++;
+
+      if (r.dateObj) {
+        const y = r.dateObj.getFullYear();
+        const m = r.dateObj.getMonth();
+        const key = `${y}-${String(m + 1).padStart(2, '0')}`;
+        if (!monthMap[key]) {
+          monthMap[key] = { label: `${MONTHS[m]} ${String(y).substring(2)}`, sortKey: key, alto: 0, medio: 0, bajo: 0, total: 0 };
+        }
+        monthMap[key].total++;
+        if (r.gravedad === 'Alto') monthMap[key].alto++;
+        else if (r.gravedad === 'Medio') monthMap[key].medio++;
+        else monthMap[key].bajo++;
+      }
+    });
+
+    stats.monthly = Object.values(monthMap).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
     return stats;
   });
 }
