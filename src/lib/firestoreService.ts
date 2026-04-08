@@ -123,28 +123,10 @@ export async function uploadToFirestore(records: RefuerzoRecord[]): Promise<{ up
 export async function loadFromFirestore(): Promise<RefuerzoRecord[]> {
   const dataCol = getDataCollection();
   
-  // Try cache first for instant load
-  let snapshot;
-  let fromCache = false;
-  try {
-    snapshot = await getDocsFromCache(query(dataCol));
-    if (snapshot.empty) throw new Error('cache empty');
-    fromCache = true;
-    console.log(`[Firestore] Loaded ${snapshot.size} docs from cache`);
-  } catch {
-    // Cache miss or empty — fetch from server
-    console.log('[Firestore] Cache miss, fetching from server...');
-    snapshot = await getDocs(query(dataCol));
-    console.log(`[Firestore] Loaded ${snapshot.size} docs from server`);
-  }
-  
-  // If cache returned data, also trigger a background server refresh
-  // to ensure we have the latest data
-  if (fromCache) {
-    getDocs(query(dataCol)).then(serverSnap => {
-      console.log(`[Firestore] Background refresh: ${serverSnap.size} docs synced`);
-    }).catch(err => console.warn('[Firestore] Background refresh failed:', err));
-  }
+  // Always fetch from server to avoid stale local cache issues
+  console.log('[Firestore] Fetching from server (skipping local cache)...');
+  const snapshot = await getDocs(query(dataCol));
+  console.log(`[Firestore] Loaded ${snapshot.size} docs from server`);
 
   const records: RefuerzoRecord[] = [];
   dedupeKeyCache = new Set<string>();
