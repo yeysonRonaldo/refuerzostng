@@ -10,6 +10,10 @@ export const CLIENT_GROUPS: ClientGroup[] = [
     name: 'POLLO GRANJERO',
     keywords: ['pollo granjero', 'papa pollo'],
   },
+  {
+    name: 'BANCOS',
+    keywords: ['banco'],
+  },
 ];
 
 export interface ClientGroupStats {
