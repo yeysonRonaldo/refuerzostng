@@ -189,7 +189,20 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
-          {/* Delete year buttons - hidden, use handleDeleteYear if needed */}
+          <div className="flex flex-wrap gap-1">
+            {years.map(y => (
+              <button
+                key={y}
+                onClick={() => handleDeleteYear(y as number)}
+                disabled={loading}
+                className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                title={`Eliminar registros del año ${y}`}
+              >
+                <Trash2 className="w-3 h-3" />
+                {y}
+              </button>
+            ))}
+          </div>
           <select
             value={monthFilter}
             onChange={(e) => setMonthFilter(e.target.value)}
