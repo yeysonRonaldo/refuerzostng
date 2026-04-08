@@ -184,6 +184,35 @@ export async function clearFirestoreData(): Promise<void> {
 /**
  * Update a single field on a record identified by its _dedupeKey
  */
+/**
+ * Delete all records for a specific year from Firestore
+ */
+export async function deleteYearFromFirestore(year: number): Promise<number> {
+  const dataCol = getDataCollection();
+  const q = query(dataCol, where('anio', '==', year));
+  const snapshot = await getDocs(q);
+  const BATCH_SIZE = 500;
+  const docs = snapshot.docs;
+  let deleted = 0;
+
+  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    const chunk = docs.slice(i, i + BATCH_SIZE);
+    chunk.forEach(d => {
+      batch.delete(d.ref);
+      const key = d.data()._dedupeKey as string;
+      if (key && dedupeKeyCache) dedupeKeyCache.delete(key);
+    });
+    await batch.commit();
+    deleted += chunk.length;
+  }
+
+  return deleted;
+}
+
+/**
+ * Update a single field on a record identified by its _dedupeKey
+ */
 export async function updateRecordFieldInFirestore(
   dedupeKey: string,
   field: string,
