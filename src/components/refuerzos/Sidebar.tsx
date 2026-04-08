@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { parseExcelFile } from '@/lib/dataProcessor';
-import { uploadToFirestore, loadFromFirestore, clearFirestoreData } from '@/lib/firestoreService';
-import { LayoutDashboard, Activity, Database, Upload, Download, Loader2, Users, LogOut, Navigation, FileText, FileSpreadsheet, X, ClipboardList } from 'lucide-react';
+import { uploadToFirestore, loadFromFirestore, clearFirestoreData, deleteYearFromFirestore } from '@/lib/firestoreService';
+import { LayoutDashboard, Activity, Database, Upload, Download, Loader2, Users, LogOut, Navigation, FileText, FileSpreadsheet, X, ClipboardList, Trash2 } from 'lucide-react';
 import { TabName } from '@/types/refuerzos';
 import { toast } from 'sonner';
 
@@ -128,6 +128,25 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     }
   };
 
+  const handleDeleteYear = async (year: number) => {
+    if (!confirm(`¿Estás seguro? Esto eliminará TODOS los registros del año ${year} de Firebase.`)) return;
+    setLoading(true);
+    try {
+      const deleted = await deleteYearFromFirestore(year);
+      // Remove from local state
+      setProcessedData(processedData.filter(r => {
+        const rYear = r.dateObj?.getFullYear() ?? r.anio;
+        return rYear !== year;
+      }));
+      toast.success(`✅ ${deleted} registros del año ${year} eliminados.`);
+    } catch (err) {
+      console.error(err);
+      toast.error(`Error al eliminar registros del año ${year}.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleNavClick = (id: TabName) => {
     setActiveTab(id);
     onClose?.();
@@ -170,6 +189,21 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
+          {/* Delete year buttons */}
+          <div className="flex flex-wrap gap-1">
+            {years.map(y => (
+              <button
+                key={y}
+                onClick={() => handleDeleteYear(Number(y))}
+                disabled={loading}
+                className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                title={`Eliminar todos los registros del año ${y}`}
+              >
+                <Trash2 className="w-3 h-3" />
+                {y}
+              </button>
+            ))}
+          </div>
           <select
             value={monthFilter}
             onChange={(e) => setMonthFilter(e.target.value)}
