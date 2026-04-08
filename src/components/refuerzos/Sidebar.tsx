@@ -128,6 +128,25 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     }
   };
 
+  const handleDeleteYear = async (year: number) => {
+    if (!confirm(`¿Estás seguro? Esto eliminará TODOS los registros del año ${year} de Firebase.`)) return;
+    setLoading(true);
+    try {
+      const deleted = await deleteYearFromFirestore(year);
+      // Remove from local state
+      setProcessedData(processedData.filter(r => {
+        const rYear = r.dateObj?.getFullYear() ?? r.anio;
+        return rYear !== year;
+      }));
+      toast.success(`✅ ${deleted} registros del año ${year} eliminados.`);
+    } catch (err) {
+      console.error(err);
+      toast.error(`Error al eliminar registros del año ${year}.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleNavClick = (id: TabName) => {
     setActiveTab(id);
     onClose?.();
