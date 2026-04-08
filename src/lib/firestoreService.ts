@@ -3,7 +3,6 @@ import {
   collection,
   doc,
   getDocs,
-  getDocsFromCache,
   writeBatch,
   query,
   where,
