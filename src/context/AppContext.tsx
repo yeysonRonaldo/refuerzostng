@@ -148,11 +148,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const metrics = useMemo(() => {
     if (currentData.length === 0) return null;
-    const m = computeMetrics(expandedData, isGrouped, selectedPests);
-    // Override total with original (non-expanded) count
-    m.total = currentData.length;
+    // Use original data for all metrics except technicians
+    const m = computeMetrics(currentData, isGrouped, selectedPests);
+    // Override technician counts with expanded data (split multi-tech records)
+    const techCounts: Record<string, number> = {};
+    expandedData.forEach(r => {
+      if (r.tecnico && r.tecnico !== '-') techCounts[r.tecnico] = (techCounts[r.tecnico] || 0) + 1;
+    });
+    m.tecnicos = techCounts;
     return m;
-  }, [expandedData, currentData.length, isGrouped, selectedPests]);
+  }, [currentData, expandedData, isGrouped, selectedPests]);
 
   const toggleGrouping = useCallback(() => {
     const newGrouped = !isGrouped;
