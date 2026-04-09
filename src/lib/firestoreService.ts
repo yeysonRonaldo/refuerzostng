@@ -108,7 +108,7 @@ export async function uploadToFirestore(records: RefuerzoRecord[]): Promise<{ up
   // Reset cache so it rebuilds on next load
   dedupeKeyCache = null;
 
-  return { uploaded: newRecords.length, skipped, newRecords };
+  return { uploaded: records.length, skipped: 0, newRecords: records };
 }
 
 /**
