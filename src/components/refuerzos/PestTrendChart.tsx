@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { useAppContext, PEST_COLORS } from '@/context/AppContext';
+import { useAppContext } from '@/context/AppContext';
+import { PEST_COLORS } from '@/lib/pestColors';
 
 export default function PestTrendChart() {
   const { metrics, selectedPests, allUniquePests, isGrouped, toggleGrouping, addPest, removePest, handleDrillDown } = useAppContext();

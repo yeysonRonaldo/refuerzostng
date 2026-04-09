@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
-import { useAppContext, PEST_COLORS } from '@/context/AppContext';
+import { useAppContext } from '@/context/AppContext';
+import { PEST_COLORS } from '@/lib/pestColors';
 import { computeClientGroupFull } from '@/lib/clientGroups';
 import { RefuerzoRecord } from '@/types/refuerzos';
 import { Eye, Printer } from 'lucide-react';
