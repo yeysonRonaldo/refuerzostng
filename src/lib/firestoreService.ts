@@ -92,17 +92,12 @@ async function ensureDedupeCache(): Promise<Set<string>> {
  */
 export async function uploadToFirestore(records: RefuerzoRecord[]): Promise<{ uploaded: number; skipped: number; newRecords: RefuerzoRecord[] }> {
   const dataCol = getDataCollection();
-  const existingKeys = await ensureDedupeCache();
 
-  // Filter out duplicates
-  const newRecords = records.filter(r => !existingKeys.has(r._dedupeKey));
-  const skipped = records.length - newRecords.length;
-
-  // Upload in batches of 500
+  // Upload ALL records without deduplication
   const BATCH_SIZE = 500;
-  for (let i = 0; i < newRecords.length; i += BATCH_SIZE) {
+  for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = writeBatch(db);
-    const chunk = newRecords.slice(i, i + BATCH_SIZE);
+    const chunk = records.slice(i, i + BATCH_SIZE);
     for (const record of chunk) {
       const docRef = doc(dataCol);
       batch.set(docRef, serializeRecord(record));
@@ -110,10 +105,8 @@ export async function uploadToFirestore(records: RefuerzoRecord[]): Promise<{ up
     await batch.commit();
   }
 
-  // Update cache with new keys
-  for (const record of newRecords) {
-    existingKeys.add(record._dedupeKey);
-  }
+  // Reset cache so it rebuilds on next load
+  dedupeKeyCache = null;
 
   return { uploaded: newRecords.length, skipped, newRecords };
 }
