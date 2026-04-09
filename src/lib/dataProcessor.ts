@@ -72,8 +72,11 @@ export function parseExcelFile(file: File): Promise<{ records: RefuerzoRecord[];
           const plagaExterna = String(row['Plagas Externas'] || '-');
 
           // Auto-generate ID like TN1, TN2...
-          const id = `TN${counter}`;
+         const id = `TN${counter}`;
           counter++;
+
+          const hoy = new Date();
+          const fechaCarga = hoy.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
 
           processed.push({
             id,
@@ -96,6 +99,7 @@ export function parseExcelFile(file: File): Promise<{ records: RefuerzoRecord[];
             recomendacionesTotales: parseInt(String(row['Recomendaciones totales'])) || 0,
             observaciones: String(row['Observaciones'] || row['Observacion'] || '-'),
             causaRefuerzo: String(row['Causa de Refuerzo'] || row['Causa Refuerzo'] || '-'),
+            fechaCarga,
             originalData: row,
             _dedupeKey: dedupeKey,
           });

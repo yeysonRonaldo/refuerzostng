@@ -147,6 +147,7 @@ export default function DatabaseView() {
     { key: 'direccion', label: 'Dirección' },
     { key: 'causaRefuerzo', label: 'Causa de Refuerzo' },
     { key: 'observaciones', label: 'Observaciones' },
+    { key: 'fechaCarga', label: 'Fecha Carga' },
   ];
 
   const gravTagClass = (g: string) => {
@@ -223,7 +224,7 @@ export default function DatabaseView() {
             </thead>
             <tbody>
               {pageData.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-8 text-muted-foreground/40">No hay resultados</td></tr>
+                <tr><td colSpan={10} className="text-center py-8 text-muted-foreground/40">No hay resultados</td></tr>
               ) : (
                 pageData.map(r => (
                   <tr key={r._dedupeKey + r.id} className="border-b border-border/50 hover:bg-accent/30">
@@ -251,6 +252,7 @@ export default function DatabaseView() {
                         onSave={v => updateRecordField(r._dedupeKey, 'observaciones', v)}
                       />
                     </td>
+                    <td className="p-2 text-xs whitespace-nowrap text-muted-foreground">{r.fechaCarga || '-'}</td>
                   </tr>
                 ))
               )}
