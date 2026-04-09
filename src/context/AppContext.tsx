@@ -129,9 +129,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [allUniquePests, setAllUniquePests] = useState<string[]>([]);
 
   const setProcessedData = useCallback((data: RefuerzoRecord[]) => {
-    const expanded = splitMultiTechRecords(data);
-    setProcessedDataRaw(expanded);
-    const pests = computeUniquePests(expanded, isGrouped);
+    setProcessedDataRaw(data);
+    const pests = computeUniquePests(data, isGrouped);
     setAllUniquePests(pests);
     setSelectedPests(computeDefaultPests(pests, isGrouped));
     setDrillDownFilter(null);
