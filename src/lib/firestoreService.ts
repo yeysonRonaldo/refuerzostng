@@ -37,6 +37,7 @@ function serializeRecord(record: RefuerzoRecord): Record<string, unknown> {
     recomendacionesTotales: record.recomendacionesTotales,
     observaciones: record.observaciones,
     causaRefuerzo: record.causaRefuerzo,
+    fechaCarga: record.fechaCarga || '-',
     _dedupeKey: record._dedupeKey,
   };
 }
@@ -64,6 +65,7 @@ function deserializeRecord(data: Record<string, unknown>): RefuerzoRecord {
     recomendacionesTotales: Number(data.recomendacionesTotales) || 0,
     observaciones: String(data.observaciones || '-'),
     causaRefuerzo: String(data.causaRefuerzo || '-'),
+    fechaCarga: String(data.fechaCarga || '-'),
     originalData: data,
     _dedupeKey: String(data._dedupeKey || ''),
   };
