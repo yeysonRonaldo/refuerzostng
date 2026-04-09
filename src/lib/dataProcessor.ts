@@ -105,10 +105,7 @@ export function parseExcelFile(file: File): Promise<{ records: RefuerzoRecord[];
           });
         }
 
-        // Split records with multiple technicians
-        const expanded = splitMultiTechRecords(processed);
-
-        resolve({ records: expanded, duplicatesSkipped });
+        resolve({ records: processed, duplicatesSkipped });
       } catch (err) {
         reject(err);
       }

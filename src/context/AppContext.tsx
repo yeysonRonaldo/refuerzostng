@@ -129,9 +129,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [allUniquePests, setAllUniquePests] = useState<string[]>([]);
 
   const setProcessedData = useCallback((data: RefuerzoRecord[]) => {
-    const expanded = splitMultiTechRecords(data);
-    setProcessedDataRaw(expanded);
-    const pests = computeUniquePests(expanded, isGrouped);
+    setProcessedDataRaw(data);
+    const pests = computeUniquePests(data, isGrouped);
     setAllUniquePests(pests);
     setSelectedPests(computeDefaultPests(pests, isGrouped));
     setDrillDownFilter(null);
@@ -146,10 +145,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, [processedData, yearFilter, monthFilter, techFilter]);
 
+  // Expanded data splits multi-tech records for per-technician metrics
+  const expandedData = useMemo(() => splitMultiTechRecords(currentData), [currentData]);
+
   const metrics = useMemo(() => {
     if (currentData.length === 0) return null;
-    return computeMetrics(currentData, isGrouped, selectedPests);
-  }, [currentData, isGrouped, selectedPests]);
+    return computeMetrics(expandedData, isGrouped, selectedPests);
+  }, [expandedData, currentData.length, isGrouped, selectedPests]);
 
   const toggleGrouping = useCallback(() => {
     const newGrouped = !isGrouped;
