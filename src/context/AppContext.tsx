@@ -150,7 +150,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const metrics = useMemo(() => {
     if (currentData.length === 0) return null;
-    return computeMetrics(expandedData, isGrouped, selectedPests);
+    const m = computeMetrics(expandedData, isGrouped, selectedPests);
+    // Override total with original (non-expanded) count
+    m.total = currentData.length;
+    return m;
   }, [expandedData, currentData.length, isGrouped, selectedPests]);
 
   const toggleGrouping = useCallback(() => {
