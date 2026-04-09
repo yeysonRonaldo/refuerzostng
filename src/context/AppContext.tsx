@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { RefuerzoRecord, TabName, DrillDownFilter, MetricCounts, TimelineEntry, PestTrendEntry } from '@/types/refuerzos';
-import { getEffectivePestName } from '@/lib/dataProcessor';
+import { getEffectivePestName, splitMultiTechRecords } from '@/lib/dataProcessor';
 import { updateRecordFieldInFirestore } from '@/lib/firestoreService';
 
 interface AppState {
@@ -145,10 +145,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, [processedData, yearFilter, monthFilter, techFilter]);
 
+  // Expanded data splits multi-tech records for per-technician metrics
+  const expandedData = useMemo(() => splitMultiTechRecords(currentData), [currentData]);
+
   const metrics = useMemo(() => {
     if (currentData.length === 0) return null;
-    return computeMetrics(currentData, isGrouped, selectedPests);
-  }, [currentData, isGrouped, selectedPests]);
+    return computeMetrics(expandedData, isGrouped, selectedPests);
+  }, [expandedData, currentData.length, isGrouped, selectedPests]);
 
   const toggleGrouping = useCallback(() => {
     const newGrouped = !isGrouped;
