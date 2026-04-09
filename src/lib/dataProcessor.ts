@@ -52,19 +52,12 @@ export function parseExcelFile(file: File): Promise<{ records: RefuerzoRecord[];
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rawData: Record<string, unknown>[] = XLSX.utils.sheet_to_json(firstSheet);
 
-        const seen = new Set<string>();
         const processed: RefuerzoRecord[] = [];
-        let duplicatesSkipped = 0;
+        const duplicatesSkipped = 0;
         let counter = 1;
 
         for (const row of rawData) {
           const dedupeKey = createDedupeKey(row);
-
-          if (seen.has(dedupeKey)) {
-            duplicatesSkipped++;
-            continue;
-          }
-          seen.add(dedupeKey);
 
           const rawDate = row['Fecha del Último Servicio'] || row['Fecha'];
           const parsedDateObj = parseDate(rawDate);
