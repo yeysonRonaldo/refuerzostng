@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { RefuerzoRecord, TabName, DrillDownFilter, MetricCounts, TimelineEntry, PestTrendEntry } from '@/types/refuerzos';
-import { getEffectivePestName, splitMultiTechRecords } from '@/lib/dataProcessor';
+import { getEffectivePestName } from '@/lib/dataProcessor';
 import { updateRecordFieldInFirestore } from '@/lib/firestoreService';
 
 interface AppState {
