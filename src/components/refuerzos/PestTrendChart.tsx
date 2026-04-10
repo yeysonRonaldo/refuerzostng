@@ -18,8 +18,11 @@ export default function PestTrendChart() {
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
 
-  // Compute totals per period (sum of all selected pests)
-  const totals = dataArray.map(d => selectedPests.reduce((sum, p) => sum + (d.counts[p] || 0), 0));
+  // Compute totals per period from timeline (all records, not just selected pests)
+  const totals = dataArray.map(d => {
+    const tl = metrics?.timeline[d.sortKey];
+    return tl ? tl.alto + tl.medio + tl.bajo : 0;
+  });
 
   let maxVal = 0;
   dataArray.forEach((d, i) => {
