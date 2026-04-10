@@ -86,24 +86,44 @@ export default function PestTrendChart() {
           ))}
           <line x1={pad.left} y1={height - pad.bottom} x2={width - pad.right} y2={height - pad.bottom} stroke="#cbd5e1" />
 
+          {/* Lines */}
           {selectedPests.map((pest, idx) => {
             const color = PEST_COLORS[idx % PEST_COLORS.length];
             const points = dataArray.map((d, i) => `${getX(i)},${getY(d.counts[pest] || 0)}`).join(' ');
+            return <polyline key={pest} points={points} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />;
+          })}
+
+          {/* Dots & labels with collision avoidance */}
+          {dataArray.map((d, i) => {
+            const items = selectedPests
+              .map((pest, idx) => ({ pest, idx, val: d.counts[pest] || 0 }))
+              .filter(it => it.val > 0)
+              .sort((a, b) => b.val - a.val);
+
+            // Spread labels so they don't overlap (min 14px apart)
+            const labelYs: number[] = [];
+            items.forEach(it => {
+              let ly = getY(it.val) - 10;
+              for (const prev of labelYs) {
+                if (Math.abs(ly - prev) < 14) {
+                  ly = prev - 14;
+                }
+              }
+              labelYs.push(ly);
+            });
 
             return (
-              <g key={pest}>
-                <polyline points={points} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                {dataArray.map((d, i) => {
-                  const val = d.counts[pest] || 0;
-                  if (val === 0) return null;
+              <g key={i}>
+                {items.map((it, j) => {
+                  const color = PEST_COLORS[it.idx % PEST_COLORS.length];
                   return (
-                    <g key={i}>
-                      <circle cx={getX(i)} cy={getY(val)} r={4} fill={color} stroke="white" strokeWidth={2}
-                        className="cursor-pointer" onClick={() => handleDrillDown('pest-trend', d.sortKey, pest)}>
-                        <title>{pest}: {val}</title>
+                    <g key={it.pest}>
+                      <circle cx={getX(i)} cy={getY(it.val)} r={4} fill={color} stroke="white" strokeWidth={2}
+                        className="cursor-pointer" onClick={() => handleDrillDown('pest-trend', d.sortKey, it.pest)}>
+                        <title>{it.pest}: {it.val}</title>
                       </circle>
-                      <text x={getX(i)} y={getY(val) - 10} textAnchor="middle" className="text-[10px] font-bold cursor-pointer"
-                        style={{ fill: color }} onClick={() => handleDrillDown('pest-trend', d.sortKey, pest)}>{val}</text>
+                      <text x={getX(i)} y={labelYs[j]} textAnchor="middle" className="text-[10px] font-bold cursor-pointer"
+                        style={{ fill: color }} onClick={() => handleDrillDown('pest-trend', d.sortKey, it.pest)}>{it.val}</text>
                     </g>
                   );
                 })}
