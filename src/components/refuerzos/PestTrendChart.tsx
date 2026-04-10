@@ -94,7 +94,13 @@ export default function PestTrendChart() {
           ))}
           <line x1={pad.left} y1={height - pad.bottom} x2={width - pad.right} y2={height - pad.bottom} stroke="#cbd5e1" />
 
-          {/* Lines */}
+          {/* Total line (dashed) */}
+          {(() => {
+            const totalPoints = dataArray.map((_, i) => `${getX(i)},${getY(totals[i])}`).join(' ');
+            return <polyline points={totalPoints} fill="none" stroke="#64748b" strokeWidth={2.5} strokeDasharray="6 3" strokeLinecap="round" strokeLinejoin="round" />;
+          })()}
+
+          {/* Individual pest lines */}
           {selectedPests.map((pest, idx) => {
             const color = PEST_COLORS[idx % PEST_COLORS.length];
             const points = dataArray.map((d, i) => `${getX(i)},${getY(d.counts[pest] || 0)}`).join(' ');
