@@ -18,9 +18,13 @@ export default function PestTrendChart() {
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
 
+  // Compute totals per period (sum of all selected pests)
+  const totals = dataArray.map(d => selectedPests.reduce((sum, p) => sum + (d.counts[p] || 0), 0));
+
   let maxVal = 0;
-  dataArray.forEach(d => {
+  dataArray.forEach((d, i) => {
     selectedPests.forEach(p => { maxVal = Math.max(maxVal, d.counts[p] || 0); });
+    maxVal = Math.max(maxVal, totals[i]);
   });
   const yMax = maxVal === 0 ? 10 : Math.ceil(maxVal * 1.1);
 
