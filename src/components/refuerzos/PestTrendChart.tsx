@@ -56,6 +56,10 @@ export default function PestTrendChart() {
 
       {/* Pest chips */}
       <div className="flex flex-wrap gap-2 items-center mb-4 p-2.5 bg-accent/50 rounded-md border border-border">
+        <span className="flex items-center gap-1.5 bg-card border rounded-full px-2.5 py-1 text-xs" style={{ borderColor: '#64748b' }}>
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#64748b' }} />
+          Total Plagas
+        </span>
         {selectedPests.map((p, idx) => {
           const color = PEST_COLORS[idx % PEST_COLORS.length];
           return (
