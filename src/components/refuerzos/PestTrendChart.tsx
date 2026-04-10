@@ -18,9 +18,13 @@ export default function PestTrendChart() {
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
 
+  // Compute totals per period (sum of all selected pests)
+  const totals = dataArray.map(d => selectedPests.reduce((sum, p) => sum + (d.counts[p] || 0), 0));
+
   let maxVal = 0;
-  dataArray.forEach(d => {
+  dataArray.forEach((d, i) => {
     selectedPests.forEach(p => { maxVal = Math.max(maxVal, d.counts[p] || 0); });
+    maxVal = Math.max(maxVal, totals[i]);
   });
   const yMax = maxVal === 0 ? 10 : Math.ceil(maxVal * 1.1);
 
@@ -52,6 +56,10 @@ export default function PestTrendChart() {
 
       {/* Pest chips */}
       <div className="flex flex-wrap gap-2 items-center mb-4 p-2.5 bg-accent/50 rounded-md border border-border">
+        <span className="flex items-center gap-1.5 bg-card border rounded-full px-2.5 py-1 text-xs" style={{ borderColor: '#64748b' }}>
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#64748b' }} />
+          Total Plagas
+        </span>
         {selectedPests.map((p, idx) => {
           const color = PEST_COLORS[idx % PEST_COLORS.length];
           return (
@@ -86,7 +94,13 @@ export default function PestTrendChart() {
           ))}
           <line x1={pad.left} y1={height - pad.bottom} x2={width - pad.right} y2={height - pad.bottom} stroke="#cbd5e1" />
 
-          {/* Lines */}
+          {/* Total line (dashed) */}
+          {(() => {
+            const totalPoints = dataArray.map((_, i) => `${getX(i)},${getY(totals[i])}`).join(' ');
+            return <polyline points={totalPoints} fill="none" stroke="#64748b" strokeWidth={2.5} strokeDasharray="6 3" strokeLinecap="round" strokeLinejoin="round" />;
+          })()}
+
+          {/* Individual pest lines */}
           {selectedPests.map((pest, idx) => {
             const color = PEST_COLORS[idx % PEST_COLORS.length];
             const points = dataArray.map((d, i) => `${getX(i)},${getY(d.counts[pest] || 0)}`).join(' ');
@@ -95,12 +109,16 @@ export default function PestTrendChart() {
 
           {/* Dots & labels with collision avoidance */}
           {dataArray.map((d, i) => {
-            const items = selectedPests
-              .map((pest, idx) => ({ pest, idx, val: d.counts[pest] || 0 }))
-              .filter(it => it.val > 0)
-              .sort((a, b) => b.val - a.val);
+            const totalVal = totals[i];
+            const items: { pest: string; idx: number; val: number; isTotal: boolean }[] = [];
+            
+            if (totalVal > 0) items.push({ pest: 'Total', idx: -1, val: totalVal, isTotal: true });
+            selectedPests.forEach((pest, idx) => {
+              const val = d.counts[pest] || 0;
+              if (val > 0) items.push({ pest, idx, val, isTotal: false });
+            });
+            items.sort((a, b) => b.val - a.val);
 
-            // Spread labels so they don't overlap (min 14px apart)
             const labelYs: number[] = [];
             items.forEach(it => {
               let ly = getY(it.val) - 10;
@@ -115,15 +133,18 @@ export default function PestTrendChart() {
             return (
               <g key={i}>
                 {items.map((it, j) => {
-                  const color = PEST_COLORS[it.idx % PEST_COLORS.length];
+                  const color = it.isTotal ? '#64748b' : PEST_COLORS[it.idx % PEST_COLORS.length];
                   return (
                     <g key={it.pest}>
-                      <circle cx={getX(i)} cy={getY(it.val)} r={4} fill={color} stroke="white" strokeWidth={2}
-                        className="cursor-pointer" onClick={() => handleDrillDown('pest-trend', d.sortKey, it.pest)}>
+                      <circle cx={getX(i)} cy={getY(it.val)} r={it.isTotal ? 5 : 4} fill={color} stroke="white" strokeWidth={2}
+                        className={it.isTotal ? '' : 'cursor-pointer'}
+                        onClick={it.isTotal ? undefined : () => handleDrillDown('pest-trend', d.sortKey, it.pest)}>
                         <title>{it.pest}: {it.val}</title>
                       </circle>
-                      <text x={getX(i)} y={labelYs[j]} textAnchor="middle" className="text-[10px] font-bold cursor-pointer"
-                        style={{ fill: color }} onClick={() => handleDrillDown('pest-trend', d.sortKey, it.pest)}>{it.val}</text>
+                      <text x={getX(i)} y={labelYs[j]} textAnchor="middle"
+                        className={`text-[10px] font-bold ${it.isTotal ? '' : 'cursor-pointer'}`}
+                        style={{ fill: color }}
+                        onClick={it.isTotal ? undefined : () => handleDrillDown('pest-trend', d.sortKey, it.pest)}>{it.val}</text>
                     </g>
                   );
                 })}
