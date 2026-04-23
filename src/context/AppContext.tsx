@@ -1,7 +1,10 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import { RefuerzoRecord, TabName, DrillDownFilter, MetricCounts, TimelineEntry, PestTrendEntry } from '@/types/refuerzos';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { RefuerzoRecord, TabName, DrillDownFilter, MetricCounts } from '@/types/refuerzos';
 import { getEffectivePestName, splitMultiTechRecords } from '@/lib/dataProcessor';
-import { updateRecordFieldInFirestore } from '@/lib/firestoreService';
+import { updateRecordFieldInFirestore, loadFromFirestore } from '@/lib/firestoreService';
+import { toast } from 'sonner';
+
+export type SyncStatus = 'idle' | 'loading' | 'saving' | 'saved' | 'error';
 
 interface AppState {
   processedData: RefuerzoRecord[];
@@ -15,6 +18,9 @@ interface AppState {
   selectedPests: string[];
   allUniquePests: string[];
   metrics: MetricCounts | null;
+  syncStatus: SyncStatus;
+  loadError: string | null;
+  recordsWithoutDate: number;
 }
 
 interface AppContextType extends AppState {
@@ -31,6 +37,7 @@ interface AppContextType extends AppState {
   resetData: () => void;
   getPestName: (raw: string) => string;
   updateRecordField: (dedupeKey: string, field: 'observaciones' | 'causaRefuerzo', value: string) => void;
+  retryLoad: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -125,6 +132,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isGrouped, setIsGrouped] = useState(false);
   const [selectedPests, setSelectedPests] = useState<string[]>([]);
   const [allUniquePests, setAllUniquePests] = useState<string[]>([]);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const setProcessedData = useCallback((data: RefuerzoRecord[]) => {
     setProcessedDataRaw(data);
@@ -134,23 +143,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setDrillDownFilter(null);
   }, [isGrouped]);
 
+  // Auto-load from Firestore on mount (resilient)
+  const loadData = useCallback(async () => {
+    setSyncStatus('loading');
+    setLoadError(null);
+    try {
+      const data = await loadFromFirestore();
+      if (data.length > 0) {
+        setProcessedData(data);
+        console.log(`[App] Loaded ${data.length} records from Firestore`);
+      }
+      setSyncStatus('saved');
+    } catch (err) {
+      console.error('Auto-load error:', err);
+      setLoadError(err instanceof Error ? err.message : 'Error desconocido al cargar datos');
+      setSyncStatus('error');
+      toast.error('Error al cargar datos. Usa el botón Reintentar.');
+    }
+  }, [setProcessedData]);
+
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const currentData = useMemo(() => {
     return processedData.filter(d => {
-      const matchesYear = !d.dateObj || yearFilter === 'all' || d.dateObj.getFullYear().toString() === yearFilter;
-      const matchesMonth = !d.dateObj || monthFilter === 'all' || d.dateObj.getMonth().toString() === monthFilter;
+      // When a specific year/month filter is set, exclude records without dates
+      const matchesYear = yearFilter === 'all'
+        ? true
+        : !!d.dateObj && d.dateObj.getFullYear().toString() === yearFilter;
+      const matchesMonth = monthFilter === 'all'
+        ? true
+        : !!d.dateObj && d.dateObj.getMonth().toString() === monthFilter;
       const matchesTech = techFilter === 'all' || d.tecnico === techFilter;
       return matchesYear && matchesMonth && matchesTech;
     });
   }, [processedData, yearFilter, monthFilter, techFilter]);
+
+  // Records without a valid date (informational only)
+  const recordsWithoutDate = useMemo(
+    () => currentData.filter(d => !d.dateObj).length,
+    [currentData]
+  );
 
   // Expanded data splits multi-tech records for per-technician metrics
   const expandedData = useMemo(() => splitMultiTechRecords(currentData), [currentData]);
 
   const metrics = useMemo(() => {
     if (currentData.length === 0) return null;
-    // Use original data for all metrics except technicians
     const m = computeMetrics(currentData, isGrouped, selectedPests);
-    // Override technician counts with expanded data (split multi-tech records)
     const techCounts: Record<string, number> = {};
     expandedData.forEach(r => {
       if (r.tecnico && r.tecnico !== '-') techCounts[r.tecnico] = (techCounts[r.tecnico] || 0) + 1;
@@ -199,17 +241,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const getPestName = useCallback((raw: string) => getEffectivePestName(raw, isGrouped), [isGrouped]);
 
   const updateRecordField = useCallback((dedupeKey: string, field: 'observaciones' | 'causaRefuerzo', value: string) => {
-    setProcessedDataRaw(prev => prev.map(r => r._dedupeKey === dedupeKey ? { ...r, [field]: value } : r));
-    updateRecordFieldInFirestore(dedupeKey, field, value).catch(err => console.warn('Failed to update Firestore:', err));
+    // Optimistic update
+    let prevValue: string | null = null;
+    setProcessedDataRaw(prev => prev.map(r => {
+      if (r._dedupeKey === dedupeKey) {
+        prevValue = r[field];
+        return { ...r, [field]: value };
+      }
+      return r;
+    }));
+    setSyncStatus('saving');
+    updateRecordFieldInFirestore(dedupeKey, field, value)
+      .then(() => setSyncStatus('saved'))
+      .catch(err => {
+        console.warn('Failed to update Firestore:', err);
+        // Rollback
+        if (prevValue !== null) {
+          setProcessedDataRaw(prev => prev.map(r =>
+            r._dedupeKey === dedupeKey ? { ...r, [field]: prevValue! } : r
+          ));
+        }
+        setSyncStatus('error');
+        toast.error('No se pudo guardar el cambio. Se revirtió.');
+      });
   }, []);
 
   return (
     <AppContext.Provider value={{
       processedData, currentData, activeTab, yearFilter, monthFilter, techFilter,
       drillDownFilter, isGrouped, selectedPests, allUniquePests, metrics,
+      syncStatus, loadError, recordsWithoutDate,
       setProcessedData, setActiveTab, setYearFilter, setMonthFilter, setTechFilter,
       setDrillDownFilter, toggleGrouping, addPest, removePest,
       handleDrillDown, resetData, getPestName, updateRecordField,
+      retryLoad: loadData,
     }}>
       {children}
     </AppContext.Provider>
