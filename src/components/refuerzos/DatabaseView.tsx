@@ -151,20 +151,20 @@ export default function DatabaseView() {
   ];
 
   const gravTagClass = (g: string) => {
-    if (g === 'Alto') return 'bg-destructive/10 text-destructive';
-    if (g === 'Medio') return 'bg-warning/10 text-warning';
-    return 'bg-success/10 text-success';
+    if (g === 'Alto') return 'bg-destructive/10 text-destructive border-destructive/20';
+    if (g === 'Medio') return 'bg-warning/10 text-warning border-warning/20';
+    return 'bg-success/10 text-success border-success/20';
   };
 
   return (
-    <div className="bg-card rounded-lg border border-border flex flex-col h-full max-h-[calc(100vh-100px)]">
+    <div className="bg-card rounded-xl border border-border flex flex-col h-full max-h-[calc(100vh-100px)] shadow-soft overflow-hidden">
       {/* Filter banner */}
       {drillDownFilter && (
         <div className="bg-primary/5 text-primary px-4 py-2.5 border-b border-primary/20 flex justify-between items-center text-sm">
           <span><strong>Filtro Activo:</strong> {getFilterLabel()} ({filteredData.length} regs)</span>
           <button
             onClick={() => setDrillDownFilter(null)}
-            className="text-xs px-2.5 py-1 rounded border border-primary/30 bg-card hover:bg-accent transition-colors"
+            className="text-xs px-2.5 py-1 rounded-md border border-primary/30 bg-card hover:bg-accent transition-colors"
           >
             ✕ Quitar Filtro
           </button>
@@ -172,25 +172,29 @@ export default function DatabaseView() {
       )}
 
       {/* Pagination */}
-      <div className="px-3 sm:px-4 py-2 sm:py-2.5 border-b border-border flex flex-wrap justify-between items-center gap-2 bg-accent/30">
-        <div className="flex items-center gap-2.5">
+      <div className="px-3 sm:px-4 py-2 sm:py-2.5 border-b border-border flex flex-wrap justify-between items-center gap-2 bg-muted/30">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="text-xs px-3 py-1.5 rounded border border-border bg-card disabled:opacity-40 hover:bg-accent transition-colors"
+            className="text-xs px-2.5 py-1.5 rounded-md border border-border bg-card disabled:opacity-40 hover:bg-accent transition-colors font-medium"
           >
-            Anterior
+            ← Anterior
           </button>
-          <span className="text-sm text-muted-foreground">Página {page} de {totalPages || 1}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            <strong className="text-foreground">{page}</strong> / {totalPages || 1}
+          </span>
           <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="text-xs px-3 py-1.5 rounded border border-border bg-card disabled:opacity-40 hover:bg-accent transition-colors"
+            className="text-xs px-2.5 py-1.5 rounded-md border border-border bg-card disabled:opacity-40 hover:bg-accent transition-colors font-medium"
           >
-            Siguiente
+            Siguiente →
           </button>
         </div>
-        <span className="text-xs text-muted-foreground">{filteredData.length} registros</span>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          <strong className="text-foreground">{filteredData.length.toLocaleString()}</strong> registros
+        </span>
       </div>
 
       {/* Table */}
@@ -202,11 +206,11 @@ export default function DatabaseView() {
           </div>
         ) : (
           <table className="w-full text-xs sm:text-sm border-collapse min-w-[900px]">
-            <thead className="bg-accent/50 sticky top-0">
+            <thead className="bg-muted/40 sticky top-0 z-10 backdrop-blur shadow-sm">
               <tr>
                 {columns.map(col => (
-                  <th key={col.key} className="text-left p-2.5 font-semibold text-muted-foreground whitespace-nowrap">
-                    <div className="flex items-center justify-between cursor-pointer hover:text-primary" onClick={() => handleSort(col.key)}>
+                  <th key={col.key} className="text-left p-2.5 font-semibold text-muted-foreground whitespace-nowrap border-b border-border">
+                    <div className="flex items-center justify-between cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort(col.key)}>
                       {col.label}
                       <span className={`text-xs ml-1 ${sortConfig?.key === col.key ? 'text-primary' : 'text-border'}`}>
                         {sortConfig?.key === col.key ? (sortConfig.dir === 'asc' ? '↑' : '↓') : '⇅'}
@@ -214,9 +218,9 @@ export default function DatabaseView() {
                     </div>
                     <input
                       type="text"
-                      placeholder="Filtrar..."
+                      placeholder="Filtrar…"
                       onChange={e => handleFilterInput(col.key, e.target.value)}
-                      className="w-full mt-1 px-1.5 py-1 text-xs border border-border rounded bg-card focus:outline-none focus:border-primary"
+                      className="w-full mt-1 px-1.5 py-1 text-xs border border-border rounded bg-card focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                     />
                   </th>
                 ))}
@@ -226,18 +230,21 @@ export default function DatabaseView() {
               {pageData.length === 0 ? (
                 <tr><td colSpan={10} className="text-center py-8 text-muted-foreground/40">No hay resultados</td></tr>
               ) : (
-                pageData.map(r => (
-                  <tr key={r._dedupeKey + r.id} className="border-b border-border/50 hover:bg-accent/30">
-                    <td className="p-2 font-bold">{r.id}</td>
-                    <td className="p-2 whitespace-nowrap">{r.displayDate}</td>
-                    <td className="p-2 max-w-[200px] truncate">{r.cliente}</td>
+                pageData.map((r, idx) => (
+                  <tr
+                    key={r._dedupeKey + r.id}
+                    className={`border-b border-border/40 hover:bg-primary/5 transition-colors ${idx % 2 === 0 ? '' : 'bg-muted/20'}`}
+                  >
+                    <td className="p-2 font-bold text-foreground/80">{r.id}</td>
+                    <td className="p-2 whitespace-nowrap text-muted-foreground">{r.displayDate}</td>
+                    <td className="p-2 max-w-[200px] truncate font-medium">{r.cliente}</td>
                     <td className="p-2 whitespace-nowrap">
-                      {r.diasActivos > 15 && <span className="bg-total text-total-foreground text-[10px] px-1.5 py-0.5 rounded mr-1 font-bold">!</span>}
-                      {r.diasActivos} días
+                      {r.diasActivos > 15 && <span className="bg-destructive/15 text-destructive text-[10px] px-1.5 py-0.5 rounded mr-1 font-bold">!</span>}
+                      <span className="tabular-nums">{r.diasActivos}d</span>
                     </td>
                     <td className="p-2 max-w-[200px] truncate">{getPestName(r.plaga)}</td>
                     <td className="p-2">
-                      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${gravTagClass(r.gravedad)}`}>{r.gravedad}</span>
+                      <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full border ${gravTagClass(r.gravedad)}`}>{r.gravedad}</span>
                     </td>
                     <td className="p-2 text-xs text-muted-foreground max-w-[200px] truncate">{r.direccion}</td>
                     <td className="p-2 text-xs max-w-[180px]">
@@ -252,7 +259,7 @@ export default function DatabaseView() {
                         onSave={v => updateRecordField(r._dedupeKey, 'observaciones', v)}
                       />
                     </td>
-                    <td className="p-2 text-xs whitespace-nowrap text-muted-foreground">{r.fechaCarga || '-'}</td>
+                    <td className="p-2 text-xs whitespace-nowrap text-muted-foreground/70">{r.fechaCarga || '-'}</td>
                   </tr>
                 ))
               )}
