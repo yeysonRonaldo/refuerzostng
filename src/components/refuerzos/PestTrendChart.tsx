@@ -178,42 +178,97 @@ export default function PestTrendChart() {
               <line x1={hover.x} x2={hover.x} y1={pad.top} y2={height - pad.bottom} stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="2 3" opacity={0.4} />
             )}
 
-            {/* Dots & labels with collision avoidance */}
+            {/* Dots & labels with smart fan-out positioning */}
             {dataArray.map((d, i) => {
               const totalVal = totals[i];
-              const items: { pest: string; idx: number; val: number; isTotal: boolean }[] = [];
+              type Item = { pest: string; idx: number; val: number; isTotal: boolean; cy: number };
+              const items: Item[] = [];
 
-              if (totalVal > 0) items.push({ pest: 'Total', idx: -1, val: totalVal, isTotal: true });
+              if (totalVal > 0) items.push({ pest: 'Total', idx: -1, val: totalVal, isTotal: true, cy: getY(totalVal) });
               selectedPests.forEach((pest, idx) => {
                 const val = d.counts[pest] || 0;
-                if (val > 0) items.push({ pest, idx, val, isTotal: false });
+                if (val > 0) items.push({ pest, idx, val, isTotal: false, cy: getY(val) });
               });
-              items.sort((a, b) => b.val - a.val);
 
-              const labelYs: number[] = [];
-              items.forEach(it => {
-                let ly = getY(it.val) - 10;
-                for (const prev of labelYs) {
-                  if (Math.abs(ly - prev) < 14) ly = prev - 14;
+              const cx = getX(i);
+              const isLast = i === dataArray.length - 1;
+              const isFirst = i === 0;
+
+              // Group items whose dots are within 12px vertically (visually overlapping)
+              const sorted = [...items].sort((a, b) => a.cy - b.cy);
+              const clusters: Item[][] = [];
+              sorted.forEach(it => {
+                const last = clusters[clusters.length - 1];
+                if (last && Math.abs(last[last.length - 1].cy - it.cy) < 12) last.push(it);
+                else clusters.push([it]);
+              });
+
+              // For each cluster, fan out labels horizontally on alternating sides
+              const labelPositions = new Map<string, { x: number; y: number; anchor: 'start' | 'middle' | 'end' }>();
+              clusters.forEach(cluster => {
+                if (cluster.length === 1) {
+                  const it = cluster[0];
+                  labelPositions.set(it.pest, { x: cx, y: it.cy - 10, anchor: 'middle' });
+                } else {
+                  // Sort cluster by value desc so biggest gets center spot
+                  const ordered = [...cluster].sort((a, b) => b.val - a.val);
+                  const baseY = Math.min(...cluster.map(c => c.cy)) - 12;
+                  ordered.forEach((it, k) => {
+                    // Alternate: 0=center, 1=right, 2=left, 3=right2, 4=left2
+                    let offsetX = 0;
+                    let anchor: 'start' | 'middle' | 'end' = 'middle';
+                    if (k === 0) {
+                      offsetX = 0;
+                    } else {
+                      const side = k % 2 === 1 ? 1 : -1;
+                      const dist = Math.ceil(k / 2) * 16;
+                      offsetX = side * dist;
+                      anchor = side === 1 ? 'start' : 'end';
+                    }
+                    let labelX = cx + offsetX;
+                    // Edge clamping
+                    if (isFirst && offsetX < 0) { labelX = cx; anchor = 'start'; }
+                    if (isLast && offsetX > 0) { labelX = cx; anchor = 'end'; }
+                    labelPositions.set(it.pest, { x: labelX, y: baseY - (k > 0 ? 0 : 0), anchor });
+                  });
                 }
-                labelYs.push(ly);
               });
 
               return (
                 <g key={i}>
-                  {items.map((it, j) => {
+                  {items.map(it => {
                     const color = it.isTotal ? '#64748b' : PEST_COLORS[it.idx % PEST_COLORS.length];
+                    const pos = labelPositions.get(it.pest)!;
+                    const showLeader = pos.x !== cx;
                     return (
                       <g key={it.pest}>
-                        <circle cx={getX(i)} cy={getY(it.val)} r={it.isTotal ? 5 : 4} fill={color} stroke="white" strokeWidth={2}
+                        {showLeader && (
+                          <line
+                            x1={cx} y1={it.cy}
+                            x2={pos.x} y2={pos.y + 3}
+                            stroke={color}
+                            strokeWidth={1}
+                            opacity={0.5}
+                          />
+                        )}
+                        <circle cx={cx} cy={it.cy} r={it.isTotal ? 5 : 4} fill={color} stroke="white" strokeWidth={2}
                           className={it.isTotal ? '' : 'cursor-pointer'}
                           onClick={it.isTotal ? undefined : () => handleDrillDown('pest-trend', d.sortKey, it.pest)}>
                           <title>{it.pest}: {it.val}</title>
                         </circle>
-                        <text x={getX(i)} y={labelYs[j]} textAnchor="middle"
+                        {/* Label background for readability */}
+                        <text x={pos.x} y={pos.y} textAnchor={pos.anchor}
+                          stroke="hsl(var(--card))" strokeWidth={3} strokeLinejoin="round"
+                          className="text-[10px] font-bold pointer-events-none select-none"
+                          style={{ paintOrder: 'stroke' }}>
+                          {it.val}
+                        </text>
+                        <text x={pos.x} y={pos.y} textAnchor={pos.anchor}
                           className={`text-[10px] font-bold ${it.isTotal ? '' : 'cursor-pointer'}`}
                           style={{ fill: color }}
-                          onClick={it.isTotal ? undefined : () => handleDrillDown('pest-trend', d.sortKey, it.pest)}>{it.val}</text>
+                          onClick={it.isTotal ? undefined : () => handleDrillDown('pest-trend', d.sortKey, it.pest)}>
+                          {it.val}
+                        </text>
                       </g>
                     );
                   })}
