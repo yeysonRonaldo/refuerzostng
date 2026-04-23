@@ -1,16 +1,45 @@
 import { useAppContext } from '@/context/AppContext';
-import { FileText, Menu } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { FileText, Menu, Cloud, CloudOff, Loader2, CheckCircle2, User } from 'lucide-react';
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
 }
 
-export default function Header({ onToggleSidebar }: HeaderProps) {
-  const { currentData, handleDrillDown } = useAppContext();
+function SyncIndicator() {
+  const { syncStatus } = useAppContext();
+  if (syncStatus === 'idle') return null;
+
+  const config = {
+    loading: { icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />, label: 'Cargando…', cls: 'text-white/80' },
+    saving: { icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />, label: 'Guardando…', cls: 'text-white/80' },
+    saved: { icon: <CheckCircle2 className="w-3.5 h-3.5" />, label: 'Sincronizado', cls: 'text-emerald-300' },
+    error: { icon: <CloudOff className="w-3.5 h-3.5" />, label: 'Error de sincronización', cls: 'text-red-300' },
+  }[syncStatus];
 
   return (
-    <header className="bg-header text-header-foreground px-3 sm:px-5 h-[56px] sm:h-[60px] flex items-center justify-between shadow-sm flex-shrink-0">
-      <div className="flex items-center gap-2">
+    <div className={`hidden sm:flex items-center gap-1.5 text-xs ${config.cls}`} title={config.label}>
+      {config.icon}
+      <span className="hidden md:inline">{config.label}</span>
+    </div>
+  );
+}
+
+export default function Header({ onToggleSidebar }: HeaderProps) {
+  const { currentData, handleDrillDown } = useAppContext();
+  const { user } = useAuth();
+
+  const initials = user?.email
+    ?.split('@')[0]
+    .split(/[._-]/)
+    .map(s => s[0]?.toUpperCase())
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('') || '?';
+
+  return (
+    <header className="bg-header text-header-foreground px-3 sm:px-5 h-[56px] sm:h-[60px] flex items-center justify-between shadow-soft flex-shrink-0 relative z-20">
+      <div className="flex items-center gap-2 sm:gap-3">
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
@@ -25,16 +54,31 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
           onClick={() => handleDrillDown('reset', '')}
           title="Ver todos los registros"
         >
-          <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
-          <span className="hidden xs:inline">Sistema de Refuerzos</span>
+          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow">
+            <FileText className="w-4 h-4" />
+          </div>
+          <span className="hidden xs:inline tracking-tight">Sistema de Refuerzos</span>
           <span className="xs:hidden">Refuerzos</span>
         </div>
       </div>
-      {currentData.length > 0 && (
-        <span className="bg-primary text-primary-foreground text-xs sm:text-sm px-2.5 sm:px-3 py-0.5 rounded-xl">
-          {currentData.length.toLocaleString()} Filtrados
-        </span>
-      )}
+
+      <div className="flex items-center gap-2 sm:gap-3">
+        <SyncIndicator />
+        {currentData.length > 0 && (
+          <span className="flex items-center gap-1.5 bg-primary/90 text-primary-foreground text-xs sm:text-sm px-2.5 sm:px-3 py-1 rounded-full font-medium shadow-soft">
+            <Cloud className="w-3.5 h-3.5" />
+            {currentData.length.toLocaleString()}
+          </span>
+        )}
+        {user && (
+          <div
+            className="hidden sm:flex w-8 h-8 rounded-full bg-white/10 items-center justify-center text-xs font-semibold ring-1 ring-white/20"
+            title={user.email || ''}
+          >
+            {initials || <User className="w-4 h-4" />}
+          </div>
+        )}
+      </div>
     </header>
   );
 }

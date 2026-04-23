@@ -86,20 +86,23 @@ export default function RoutesView() {
   const endIdx = Math.min(filteredData.length, Math.ceil((scrollTop + containerHeight.current) / ITEM_HEIGHT) + OVERSCAN);
   const visibleItems = filteredData.slice(startIdx, endIdx);
 
-  const toggleSelection = (id: string) => {
+  // Stable key independent of regenerated `id` from splitMultiTechRecords
+  const keyOf = (item: typeof currentData[number]) => `${item._dedupeKey}|${item.tecnico}`;
+
+  const toggleSelection = (key: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
 
-  const selectAll = () => setSelectedIds(new Set(filteredData.map(d => d.id)));
+  const selectAll = () => setSelectedIds(new Set(filteredData.map(keyOf)));
   const clearSelection = () => { setSelectedIds(new Set()); setMapQuery(''); };
 
   const getDestinations = () => {
-    const selectedItems = filteredData.filter(d => selectedIds.has(d.id));
+    const selectedItems = filteredData.filter(d => selectedIds.has(keyOf(d)));
     return selectedItems
       .map(i => {
         let query = '';
@@ -241,11 +244,12 @@ export default function RoutesView() {
               <div style={{ height: totalHeight, position: 'relative' }}>
                 {visibleItems.map((item, i) => {
                   const actualIdx = startIdx + i;
-                  const isSelected = selectedIds.has(item.id);
+                  const k = keyOf(item);
+                  const isSelected = selectedIds.has(k);
                   return (
                     <div
-                      key={item.id}
-                      onClick={() => toggleSelection(item.id)}
+                      key={k}
+                      onClick={() => toggleSelection(k)}
                       style={{
                         position: 'absolute',
                         top: actualIdx * ITEM_HEIGHT,

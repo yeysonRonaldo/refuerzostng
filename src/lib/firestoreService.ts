@@ -87,17 +87,39 @@ async function ensureDedupeCache(): Promise<Set<string>> {
 }
 
 /**
- * Upload records to Firestore, skipping duplicates. 
- * Returns uploaded records so we can merge locally without re-fetching.
+ * Upload records to Firestore, skipping duplicates by `_dedupeKey`.
+ * Uses the in-memory dedupe cache (built from existing data) to avoid
+ * re-uploading records that are already present.
  */
 export async function uploadToFirestore(records: RefuerzoRecord[]): Promise<{ uploaded: number; skipped: number; newRecords: RefuerzoRecord[] }> {
   const dataCol = getDataCollection();
 
-  // Upload ALL records without deduplication
+  // Ensure dedupe cache is populated from existing Firestore data
+  const cache = await ensureDedupeCache();
+
+  // Filter out records already in DB (by _dedupeKey) and de-dup within the batch itself
+  const newRecords: RefuerzoRecord[] = [];
+  let skipped = 0;
+  const seenInBatch = new Set<string>();
+  for (const r of records) {
+    const key = r._dedupeKey;
+    if (!key) {
+      newRecords.push(r);
+      continue;
+    }
+    if (cache.has(key) || seenInBatch.has(key)) {
+      skipped++;
+      continue;
+    }
+    seenInBatch.add(key);
+    newRecords.push(r);
+  }
+
+  // Upload only new records
   const BATCH_SIZE = 500;
-  for (let i = 0; i < records.length; i += BATCH_SIZE) {
+  for (let i = 0; i < newRecords.length; i += BATCH_SIZE) {
     const batch = writeBatch(db);
-    const chunk = records.slice(i, i + BATCH_SIZE);
+    const chunk = newRecords.slice(i, i + BATCH_SIZE);
     for (const record of chunk) {
       const docRef = doc(dataCol);
       batch.set(docRef, serializeRecord(record));
@@ -105,10 +127,10 @@ export async function uploadToFirestore(records: RefuerzoRecord[]): Promise<{ up
     await batch.commit();
   }
 
-  // Reset cache so it rebuilds on next load
-  dedupeKeyCache = null;
+  // Update cache with newly uploaded keys
+  newRecords.forEach(r => { if (r._dedupeKey) cache.add(r._dedupeKey); });
 
-  return { uploaded: records.length, skipped: 0, newRecords: records };
+  return { uploaded: newRecords.length, skipped, newRecords };
 }
 
 /**

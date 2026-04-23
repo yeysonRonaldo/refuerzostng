@@ -1,9 +1,30 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { PEST_COLORS } from '@/lib/pestColors';
+import { Bug, X, Plus } from 'lucide-react';
+
+// Catmull-Rom to Bezier smoothing
+function smoothPath(points: { x: number; y: number }[]): string {
+  if (points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
+  let d = `M ${points[0].x},${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] || points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+  }
+  return d;
+}
 
 export default function PestTrendChart() {
   const { metrics, selectedPests, allUniquePests, isGrouped, toggleGrouping, addPest, removePest, handleDrillDown } = useAppContext();
+  const [hover, setHover] = useState<{ i: number; x: number; y: number } | null>(null);
 
   const dataArray = useMemo(() => {
     if (!metrics) return [];
@@ -13,12 +34,11 @@ export default function PestTrendChart() {
   const availableToAdd = allUniquePests.filter(p => !selectedPests.includes(p));
 
   const width = 900;
-  const height = 280;
+  const height = 300;
   const pad = { top: 20, right: 30, bottom: 40, left: 50 };
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
 
-  // Compute totals per period from timeline (all records, not just selected pests)
   const totals = dataArray.map(d => {
     const tl = metrics?.timeline[d.sortKey];
     return tl ? tl.alto + tl.medio + tl.bajo : 0;
@@ -44,13 +64,18 @@ export default function PestTrendChart() {
   const skipRate = Math.max(1, Math.ceil(dataArray.length / 12));
 
   return (
-    <div className="bg-card rounded-lg p-5 shadow-sm border border-border col-span-full">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-semibold">Tendencia por Tipo de Plaga</h3>
+    <div className="bg-card rounded-xl p-5 shadow-soft border border-border col-span-full animate-fade-in-up">
+      <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Bug className="w-4 h-4 text-primary" />
+          </div>
+          <h3 className="text-sm font-semibold tracking-tight">Tendencia por Tipo de Plaga</h3>
+        </div>
         <button
           onClick={toggleGrouping}
-          className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
-            isGrouped ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-foreground hover:bg-accent'
+          className={`text-xs px-3 py-1.5 rounded-md border transition-all font-medium ${
+            isGrouped ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'bg-card border-border text-foreground hover:bg-accent'
           }`}
         >
           {isGrouped ? '✕ Desenglobar' : '⊞ Englobar Plagas'}
@@ -58,108 +83,185 @@ export default function PestTrendChart() {
       </div>
 
       {/* Pest chips */}
-      <div className="flex flex-wrap gap-2 items-center mb-4 p-2.5 bg-accent/50 rounded-md border border-border">
-        <span className="flex items-center gap-1.5 bg-card border rounded-full px-2.5 py-1 text-xs" style={{ borderColor: '#64748b' }}>
+      <div className="flex flex-wrap gap-1.5 items-center mb-4 p-2.5 bg-accent/40 rounded-lg border border-border">
+        <span className="flex items-center gap-1.5 bg-card border rounded-full px-2.5 py-1 text-xs font-medium" style={{ borderColor: '#64748b' }}>
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#64748b' }} />
           Total Plagas
         </span>
         {selectedPests.map((p, idx) => {
           const color = PEST_COLORS[idx % PEST_COLORS.length];
           return (
-            <span key={p} className="flex items-center gap-1.5 bg-card border rounded-full px-2.5 py-1 text-xs" style={{ borderColor: color }}>
+            <span key={p} className="flex items-center gap-1.5 bg-card border rounded-full px-2.5 py-1 text-xs font-medium" style={{ borderColor: color }}>
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
               {p}
-              <button onClick={() => removePest(p)} className="text-muted-foreground hover:text-destructive font-bold ml-0.5">×</button>
+              <button onClick={() => removePest(p)} className="text-muted-foreground hover:text-destructive ml-0.5 transition-colors" aria-label={`Quitar ${p}`}>
+                <X className="w-3 h-3" />
+              </button>
             </span>
           );
         })}
         {availableToAdd.length > 0 && (
-          <select
-            onChange={(e) => { addPest(e.target.value); e.target.value = ''; }}
-            className="text-xs p-1 rounded border border-border bg-card"
-            value=""
-          >
-            <option value="">+ Agregar Plaga</option>
-            {availableToAdd.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
+          <div className="relative inline-flex items-center">
+            <Plus className="absolute left-2 w-3 h-3 text-muted-foreground pointer-events-none" />
+            <select
+              onChange={(e) => { addPest(e.target.value); e.target.value = ''; }}
+              className="text-xs pl-6 pr-2 py-1.5 rounded-full border border-border bg-card hover:bg-accent transition-colors cursor-pointer"
+              value=""
+            >
+              <option value="">Agregar Plaga</option>
+              {availableToAdd.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
         )}
       </div>
 
       {dataArray.length === 0 || selectedPests.length === 0 ? (
         <p className="text-center text-muted-foreground/40 py-16">Selecciona plagas para ver su evolución</p>
       ) : (
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ overflow: 'visible' }}>
-          {gridLines.map(g => (
-            <g key={g.val}>
-              <line x1={pad.left} y1={g.y} x2={width - pad.right} y2={g.y} stroke="#f1f5f9" strokeDasharray="4" />
-              <text x={pad.left - 10} y={g.y} textAnchor="end" alignmentBaseline="middle" className="text-[10px] fill-muted-foreground">{g.val}</text>
-            </g>
-          ))}
-          <line x1={pad.left} y1={height - pad.bottom} x2={width - pad.right} y2={height - pad.bottom} stroke="#cbd5e1" />
+        <div className="relative">
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="w-full h-auto"
+            style={{ overflow: 'visible' }}
+            onMouseLeave={() => setHover(null)}
+          >
+            <defs>
+              <linearGradient id="totalGradient" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="#64748b" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="#64748b" stopOpacity="0" />
+              </linearGradient>
+            </defs>
 
-          {/* Total line (dashed) */}
-          {(() => {
-            const totalPoints = dataArray.map((_, i) => `${getX(i)},${getY(totals[i])}`).join(' ');
-            return <polyline points={totalPoints} fill="none" stroke="#64748b" strokeWidth={2.5} strokeDasharray="6 3" strokeLinecap="round" strokeLinejoin="round" />;
-          })()}
+            {gridLines.map(g => (
+              <g key={g.val}>
+                <line x1={pad.left} y1={g.y} x2={width - pad.right} y2={g.y} stroke="hsl(var(--border))" strokeDasharray="3 4" />
+                <text x={pad.left - 10} y={g.y} textAnchor="end" alignmentBaseline="middle" className="text-[10px] fill-muted-foreground">{g.val}</text>
+              </g>
+            ))}
+            <line x1={pad.left} y1={height - pad.bottom} x2={width - pad.right} y2={height - pad.bottom} stroke="hsl(var(--border))" />
 
-          {/* Individual pest lines */}
-          {selectedPests.map((pest, idx) => {
-            const color = PEST_COLORS[idx % PEST_COLORS.length];
-            const points = dataArray.map((d, i) => `${getX(i)},${getY(d.counts[pest] || 0)}`).join(' ');
-            return <polyline key={pest} points={points} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />;
-          })}
+            {/* Total area + smooth line */}
+            {(() => {
+              const pts = dataArray.map((_, i) => ({ x: getX(i), y: getY(totals[i]) }));
+              const path = smoothPath(pts);
+              const area = path + ` L ${getX(dataArray.length - 1)},${height - pad.bottom} L ${getX(0)},${height - pad.bottom} Z`;
+              return (
+                <>
+                  <path d={area} fill="url(#totalGradient)" />
+                  <path d={path} fill="none" stroke="#64748b" strokeWidth={2.5} strokeDasharray="6 4" strokeLinecap="round" strokeLinejoin="round" />
+                </>
+              );
+            })()}
 
-          {/* Dots & labels with collision avoidance */}
-          {dataArray.map((d, i) => {
-            const totalVal = totals[i];
-            const items: { pest: string; idx: number; val: number; isTotal: boolean }[] = [];
-            
-            if (totalVal > 0) items.push({ pest: 'Total', idx: -1, val: totalVal, isTotal: true });
-            selectedPests.forEach((pest, idx) => {
-              const val = d.counts[pest] || 0;
-              if (val > 0) items.push({ pest, idx, val, isTotal: false });
-            });
-            items.sort((a, b) => b.val - a.val);
+            {/* Individual pest smooth lines */}
+            {selectedPests.map((pest, idx) => {
+              const color = PEST_COLORS[idx % PEST_COLORS.length];
+              const pts = dataArray.map((d, i) => ({ x: getX(i), y: getY(d.counts[pest] || 0) }));
+              return <path key={pest} d={smoothPath(pts)} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />;
+            })}
 
-            const labelYs: number[] = [];
-            items.forEach(it => {
-              let ly = getY(it.val) - 10;
-              for (const prev of labelYs) {
-                if (Math.abs(ly - prev) < 14) {
-                  ly = prev - 14;
+            {/* Hover capture columns */}
+            {dataArray.map((d, i) => (
+              <rect
+                key={`hover-${i}`}
+                x={getX(i) - stepX / 2}
+                y={pad.top}
+                width={stepX}
+                height={chartH}
+                fill="transparent"
+                onMouseEnter={() => setHover({ i, x: getX(i), y: pad.top })}
+              />
+            ))}
+
+            {/* Hover indicator line */}
+            {hover && (
+              <line x1={hover.x} x2={hover.x} y1={pad.top} y2={height - pad.bottom} stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="2 3" opacity={0.4} />
+            )}
+
+            {/* Dots & labels with collision avoidance */}
+            {dataArray.map((d, i) => {
+              const totalVal = totals[i];
+              const items: { pest: string; idx: number; val: number; isTotal: boolean }[] = [];
+
+              if (totalVal > 0) items.push({ pest: 'Total', idx: -1, val: totalVal, isTotal: true });
+              selectedPests.forEach((pest, idx) => {
+                const val = d.counts[pest] || 0;
+                if (val > 0) items.push({ pest, idx, val, isTotal: false });
+              });
+              items.sort((a, b) => b.val - a.val);
+
+              const labelYs: number[] = [];
+              items.forEach(it => {
+                let ly = getY(it.val) - 10;
+                for (const prev of labelYs) {
+                  if (Math.abs(ly - prev) < 14) ly = prev - 14;
                 }
-              }
-              labelYs.push(ly);
-            });
+                labelYs.push(ly);
+              });
 
+              return (
+                <g key={i}>
+                  {items.map((it, j) => {
+                    const color = it.isTotal ? '#64748b' : PEST_COLORS[it.idx % PEST_COLORS.length];
+                    return (
+                      <g key={it.pest}>
+                        <circle cx={getX(i)} cy={getY(it.val)} r={it.isTotal ? 5 : 4} fill={color} stroke="white" strokeWidth={2}
+                          className={it.isTotal ? '' : 'cursor-pointer'}
+                          onClick={it.isTotal ? undefined : () => handleDrillDown('pest-trend', d.sortKey, it.pest)}>
+                          <title>{it.pest}: {it.val}</title>
+                        </circle>
+                        <text x={getX(i)} y={labelYs[j]} textAnchor="middle"
+                          className={`text-[10px] font-bold ${it.isTotal ? '' : 'cursor-pointer'}`}
+                          style={{ fill: color }}
+                          onClick={it.isTotal ? undefined : () => handleDrillDown('pest-trend', d.sortKey, it.pest)}>{it.val}</text>
+                      </g>
+                    );
+                  })}
+                </g>
+              );
+            })}
+
+            {dataArray.map((d, i) => {
+              if (i % skipRate !== 0 && i !== dataArray.length - 1) return null;
+              return <text key={i} x={getX(i)} y={height - 10} textAnchor="middle" className="text-[10px] fill-muted-foreground">{d.label}</text>;
+            })}
+          </svg>
+
+          {/* Floating tooltip */}
+          {hover && dataArray[hover.i] && (() => {
+            const d = dataArray[hover.i];
+            const tot = totals[hover.i];
+            const leftPct = (hover.x / width) * 100;
+            const flipLeft = leftPct > 70;
             return (
-              <g key={i}>
-                {items.map((it, j) => {
-                  const color = it.isTotal ? '#64748b' : PEST_COLORS[it.idx % PEST_COLORS.length];
+              <div
+                className="absolute pointer-events-none z-10 bg-card border border-border rounded-lg shadow-elegant px-3 py-2 text-xs min-w-[140px]"
+                style={{
+                  left: `${leftPct}%`,
+                  top: 8,
+                  transform: flipLeft ? 'translateX(-100%) translateX(-8px)' : 'translateX(8px)',
+                }}
+              >
+                <div className="font-semibold text-foreground mb-1">{d.label}</div>
+                <div className="flex items-center justify-between gap-3 text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: '#64748b' }} /> Total</span>
+                  <span className="font-bold text-foreground">{tot}</span>
+                </div>
+                {selectedPests.map((pest, idx) => {
+                  const v = d.counts[pest] || 0;
+                  if (v === 0) return null;
+                  const color = PEST_COLORS[idx % PEST_COLORS.length];
                   return (
-                    <g key={it.pest}>
-                      <circle cx={getX(i)} cy={getY(it.val)} r={it.isTotal ? 5 : 4} fill={color} stroke="white" strokeWidth={2}
-                        className={it.isTotal ? '' : 'cursor-pointer'}
-                        onClick={it.isTotal ? undefined : () => handleDrillDown('pest-trend', d.sortKey, it.pest)}>
-                        <title>{it.pest}: {it.val}</title>
-                      </circle>
-                      <text x={getX(i)} y={labelYs[j]} textAnchor="middle"
-                        className={`text-[10px] font-bold ${it.isTotal ? '' : 'cursor-pointer'}`}
-                        style={{ fill: color }}
-                        onClick={it.isTotal ? undefined : () => handleDrillDown('pest-trend', d.sortKey, it.pest)}>{it.val}</text>
-                    </g>
+                    <div key={pest} className="flex items-center justify-between gap-3 mt-0.5">
+                      <span className="flex items-center gap-1.5 truncate"><span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} /> {pest}</span>
+                      <span className="font-semibold" style={{ color }}>{v}</span>
+                    </div>
                   );
                 })}
-              </g>
+              </div>
             );
-          })}
-
-          {dataArray.map((d, i) => {
-            if (i % skipRate !== 0 && i !== dataArray.length - 1) return null;
-            return <text key={i} x={getX(i)} y={height - 10} textAnchor="middle" className="text-[10px] fill-muted-foreground">{d.label}</text>;
-          })}
-        </svg>
+          })()}
+        </div>
       )}
     </div>
   );
