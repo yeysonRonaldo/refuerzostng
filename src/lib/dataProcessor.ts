@@ -31,15 +31,31 @@ function formatDate(d: Date | null): string {
 
 /**
  * Creates a dedupe key from a record to identify duplicates.
- * Uses: Cliente + IdServicio + PlagaInterna + PlagaExterna + Fecha
+ * Uses ALL relevant fields so only 100% identical rows collapse.
  */
 function createDedupeKey(row: Record<string, unknown>): string {
-  const cliente = String(row['Cliente'] || '').trim().toLowerCase();
-  const idServicio = String(row['Id Servicio'] || '').trim();
-  const plagaInt = String(row['Plagas Internas'] || '').trim().toLowerCase();
-  const plagaExt = String(row['Plagas Externas'] || '').trim().toLowerCase();
-  const fecha = String(row['Fecha del Último Servicio'] || '').trim();
-  return `${cliente}|${idServicio}|${plagaInt}|${plagaExt}|${fecha}`;
+  const norm = (v: unknown) => String(v ?? '').trim().toLowerCase();
+  const parts = [
+    norm(row['Cliente']),
+    norm(row['Id Servicio']),
+    norm(row['Id Cliente']),
+    norm(row['Código Cliente']),
+    norm(row['Plagas Internas']),
+    norm(row['Plagas Externas']),
+    norm(row['Fecha del Último Servicio']),
+    norm(row['Gravedad']),
+    norm(row['Tecnicos'] ?? row['Tecnico']),
+    norm(row['Iniciales Tecnicos']),
+    norm(row['Programador']),
+    norm(row['Dirección']),
+    norm(row['Días Activos']),
+    norm(row['Recomendaciones']),
+    norm(row['Recomendaciones totales']),
+    norm(row['Observaciones'] ?? row['Observacion']),
+    norm(row['Causa de Refuerzo'] ?? row['Causa Refuerzo']),
+    norm(row['Año']),
+  ];
+  return parts.join('|');
 }
 
 export function parseExcelFile(file: File): Promise<{ records: RefuerzoRecord[]; duplicatesSkipped: number }> {
