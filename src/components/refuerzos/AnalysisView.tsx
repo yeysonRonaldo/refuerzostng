@@ -7,6 +7,20 @@ const SHORT_MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "S
 
 export default function AnalysisView() {
   const { processedData, getPestName } = useAppContext();
+
+  // Combina Plagas Internas + Externas en un único nombre legible
+  const getCombinedPest = (r: { plaga?: string; plagasExternas?: string }) => {
+    const clean = (v?: string) => {
+      if (!v) return '';
+      const n = getPestName(v).trim();
+      if (!n || n === '-' || n === '---') return '';
+      return n;
+    };
+    const a = clean(r.plaga);
+    const b = clean(r.plagasExternas);
+    const parts = Array.from(new Set([a, b].filter(Boolean)));
+    return parts.length ? parts.join(' / ') : '---';
+  };
   const [selectedMonth, setSelectedMonth] = useState('');
   const [analysisResult, setAnalysisResult] = useState<{
     newCases: { cliente: string; plaga: string; tecnico: string; gravedad: string }[];
@@ -31,8 +45,9 @@ export default function AnalysisView() {
   const recurrence = useMemo(() => {
     const map: Record<string, { cliente: string; plaga: string; months: Set<string>; lastDate: Date | null }> = {};
     processedData.forEach(r => {
-      if (!r.cliente || !r.plaga) return;
-      const pName = getPestName(r.plaga);
+      if (!r.cliente) return;
+      const pName = getCombinedPest(r);
+      if (pName === '---') return;
       const key = `${r.cliente}|${pName}`;
       if (!map[key]) map[key] = { cliente: r.cliente, plaga: pName, months: new Set(), lastDate: r.dateObj };
       if (r.dateObj) {
@@ -56,7 +71,7 @@ export default function AnalysisView() {
       const m = d.dateObj.getUTCMonth();
       const key = `${y}-${String(m + 1).padStart(2, '0')}`;
       if (!monthMap[key]) monthMap[key] = { keys: new Set() };
-      monthMap[key].keys.add(`${d.cliente}|${getPestName(d.plaga)}`);
+      monthMap[key].keys.add(`${d.cliente}|${getCombinedPest(d)}`);
     });
 
     const sortedKeys = Object.keys(monthMap).sort();
@@ -92,7 +107,7 @@ export default function AnalysisView() {
     const buildMap = (data: typeof processedData) => {
       const map = new Map<string, { tecnico: string; gravedad: string }>();
       data.forEach(d => {
-        const k = `${d.cliente}|${getPestName(d.plaga)}`;
+        const k = `${d.cliente}|${getCombinedPest(d)}`;
         map.set(k, { tecnico: d.tecnico || '-', gravedad: d.gravedad || '-' });
       });
       return map;
