@@ -87,35 +87,15 @@ async function ensureDedupeCache(): Promise<Set<string>> {
 }
 
 /**
- * Upload records to Firestore, skipping duplicates by `_dedupeKey`.
- * Uses the in-memory dedupe cache (built from existing data) to avoid
- * re-uploading records that are already present.
+ * Upload ALL records to Firestore without any deduplication filter.
+ * Every row from the Excel is imported as-is. Firestore assigns its own doc IDs.
  */
 export async function uploadToFirestore(records: RefuerzoRecord[]): Promise<{ uploaded: number; skipped: number; newRecords: RefuerzoRecord[] }> {
   const dataCol = getDataCollection();
 
-  // Ensure dedupe cache is populated from existing Firestore data
-  const cache = await ensureDedupeCache();
+  // No filtering: import every record
+  const newRecords = records;
 
-  // Filter out records already in DB (by _dedupeKey) and de-dup within the batch itself
-  const newRecords: RefuerzoRecord[] = [];
-  let skipped = 0;
-  const seenInBatch = new Set<string>();
-  for (const r of records) {
-    const key = r._dedupeKey;
-    if (!key) {
-      newRecords.push(r);
-      continue;
-    }
-    if (cache.has(key) || seenInBatch.has(key)) {
-      skipped++;
-      continue;
-    }
-    seenInBatch.add(key);
-    newRecords.push(r);
-  }
-
-  // Upload only new records
   const BATCH_SIZE = 500;
   for (let i = 0; i < newRecords.length; i += BATCH_SIZE) {
     const batch = writeBatch(db);
@@ -127,10 +107,12 @@ export async function uploadToFirestore(records: RefuerzoRecord[]): Promise<{ up
     await batch.commit();
   }
 
-  // Update cache with newly uploaded keys
-  newRecords.forEach(r => { if (r._dedupeKey) cache.add(r._dedupeKey); });
+  // Keep cache in sync (best-effort, used elsewhere for edits)
+  if (dedupeKeyCache) {
+    newRecords.forEach(r => { if (r._dedupeKey) dedupeKeyCache!.add(r._dedupeKey); });
+  }
 
-  return { uploaded: newRecords.length, skipped, newRecords };
+  return { uploaded: newRecords.length, skipped: 0, newRecords };
 }
 
 /**
