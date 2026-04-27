@@ -205,3 +205,63 @@ export async function updateRecordFieldInFirestore(
     await updateDoc(docSnap.ref, { [field]: value });
   }
 }
+
+/**
+ * Re-parse the date of every document using the (current) parser logic.
+ * Reads the raw value from `originalData['Fecha del Último Servicio']` (or 'Fecha'),
+ * recomputes dateTimestamp / displayDate / anio, and updates docs that changed.
+ *
+ * Useful after a parser fix to repair previously misinterpreted dates without
+ * re-uploading the source Excel.
+ */
+export async function reparseAllDatesInFirestore(
+  parseDateFn: (raw: unknown) => Date | null,
+  formatDateFn: (d: Date | null) => string
+): Promise<{ scanned: number; updated: number; unchanged: number; failed: number }> {
+  const dataCol = getDataCollection();
+  const snapshot = await getDocs(dataCol);
+  const docs = snapshot.docs;
+
+  let updated = 0;
+  let unchanged = 0;
+  let failed = 0;
+
+  const BATCH_SIZE = 400;
+  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    let writes = 0;
+    const chunk = docs.slice(i, i + BATCH_SIZE);
+
+    for (const docSnap of chunk) {
+      const data = docSnap.data() as Record<string, unknown>;
+      const original = (data.originalData ?? {}) as Record<string, unknown>;
+      const rawDate = original['Fecha del Último Servicio'] ?? original['Fecha'];
+
+      const newDate = parseDateFn(rawDate);
+      if (!newDate) {
+        failed++;
+        continue;
+      }
+
+      const newTs = newDate.getTime();
+      const currentTs = data.dateTimestamp as number | null;
+      if (currentTs === newTs) {
+        unchanged++;
+        continue;
+      }
+
+      batch.update(docSnap.ref, {
+        dateTimestamp: newTs,
+        displayDate: formatDateFn(newDate),
+        anio: newDate.getFullYear(),
+      });
+      writes++;
+      updated++;
+    }
+
+    if (writes > 0) await batch.commit();
+  }
+
+  return { scanned: docs.length, updated, unchanged, failed };
+}
+
