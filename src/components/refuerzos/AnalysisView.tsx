@@ -18,8 +18,8 @@ export default function AnalysisView() {
     const set = new Set<string>();
     processedData.forEach(d => {
       if (d.dateObj) {
-        const y = d.dateObj.getFullYear();
-        const m = d.dateObj.getMonth();
+        const y = d.dateObj.getUTCFullYear();
+        const m = d.dateObj.getUTCMonth();
         set.add(`${y}-${String(m + 1).padStart(2, '0')}`);
       }
     });
@@ -35,7 +35,7 @@ export default function AnalysisView() {
       const key = `${r.cliente}|${pName}`;
       if (!map[key]) map[key] = { cliente: r.cliente, plaga: pName, months: new Set(), lastDate: r.dateObj };
       if (r.dateObj) {
-        map[key].months.add(`${r.dateObj.getFullYear()}-${r.dateObj.getMonth()}`);
+        map[key].months.add(`${r.dateObj.getUTCFullYear()}-${r.dateObj.getUTCMonth()}`);
         if (!map[key].lastDate || r.dateObj > map[key].lastDate!) map[key].lastDate = r.dateObj;
       }
     });
@@ -51,8 +51,8 @@ export default function AnalysisView() {
     const monthMap: Record<string, { keys: Set<string> }> = {};
     processedData.forEach(d => {
       if (!d.dateObj) return;
-      const y = d.dateObj.getFullYear();
-      const m = d.dateObj.getMonth();
+      const y = d.dateObj.getUTCFullYear();
+      const m = d.dateObj.getUTCMonth();
       const key = `${y}-${String(m + 1).padStart(2, '0')}`;
       if (!monthMap[key]) monthMap[key] = { keys: new Set() };
       monthMap[key].keys.add(`${d.cliente}|${getPestName(d.plaga)}`);
@@ -82,10 +82,10 @@ export default function AnalysisView() {
     if (!selectedMonth) return;
     const [y, m] = selectedMonth.split('-').map(Number);
 
-    const currentData = processedData.filter(d => d.dateObj && d.dateObj.getFullYear() === y && (d.dateObj.getMonth() + 1) === m);
+    const currentData = processedData.filter(d => d.dateObj && d.dateObj.getUTCFullYear() === y && (d.dateObj.getUTCMonth() + 1) === m);
     let prevY = y, prevM = m - 1;
     if (prevM === 0) { prevM = 12; prevY = y - 1; }
-    const prevData = processedData.filter(d => d.dateObj && d.dateObj.getFullYear() === prevY && (d.dateObj.getMonth() + 1) === prevM);
+    const prevData = processedData.filter(d => d.dateObj && d.dateObj.getUTCFullYear() === prevY && (d.dateObj.getUTCMonth() + 1) === prevM);
 
     const getKeys = (data: typeof processedData) => {
       const set = new Set<string>();

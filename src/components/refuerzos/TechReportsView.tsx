@@ -45,8 +45,8 @@ export default function TechReportsView() {
       if (tech === '-') return;
       if (!r.dateObj) return;
 
-      const y = r.dateObj.getFullYear();
-      const m = r.dateObj.getMonth();
+      const y = r.dateObj.getUTCFullYear();
+      const m = r.dateObj.getUTCMonth();
       const key = `${y}-${String(m + 1).padStart(2, '0')}`;
       monthSet.add(key);
 
