@@ -87,31 +87,41 @@ export default function AnalysisView() {
     if (prevM === 0) { prevM = 12; prevY = y - 1; }
     const prevData = processedData.filter(d => d.dateObj && d.dateObj.getUTCFullYear() === prevY && (d.dateObj.getUTCMonth() + 1) === prevM);
 
-    const getKeys = (data: typeof processedData) => {
-      const set = new Set<string>();
-      data.forEach(d => set.add(`${d.cliente}|${getPestName(d.plaga)}`));
-      return set;
+    // Build maps from key -> sample record (last one wins)
+    const buildMap = (data: typeof processedData) => {
+      const map = new Map<string, { tecnico: string; gravedad: string }>();
+      data.forEach(d => {
+        const k = `${d.cliente}|${getPestName(d.plaga)}`;
+        map.set(k, { tecnico: d.tecnico || '-', gravedad: d.gravedad || '-' });
+      });
+      return map;
     };
 
-    const currentKeys = getKeys(currentData);
-    const prevKeys = getKeys(prevData);
+    const currentMap = buildMap(currentData);
+    const prevMap = buildMap(prevData);
 
-    const newCases: { cliente: string; plaga: string }[] = [];
-    const solvedCases: { cliente: string; plaga: string }[] = [];
+    const newCases: { cliente: string; plaga: string; tecnico: string; gravedad: string }[] = [];
+    const solvedCases: { cliente: string; plaga: string; tecnico: string; gravedad: string }[] = [];
 
-    currentKeys.forEach(key => {
-      if (!prevKeys.has(key)) {
+    currentMap.forEach((info, key) => {
+      if (!prevMap.has(key)) {
         const [c, p] = key.split('|');
-        newCases.push({ cliente: c, plaga: p });
+        newCases.push({ cliente: c, plaga: p, tecnico: info.tecnico, gravedad: info.gravedad });
       }
     });
 
-    prevKeys.forEach(key => {
-      if (!currentKeys.has(key)) {
+    prevMap.forEach((info, key) => {
+      if (!currentMap.has(key)) {
         const [c, p] = key.split('|');
-        solvedCases.push({ cliente: c, plaga: p });
+        solvedCases.push({ cliente: c, plaga: p, tecnico: info.tecnico, gravedad: info.gravedad });
       }
     });
+
+    const sevRank: Record<string, number> = { Alto: 0, Medio: 1, Bajo: 2 };
+    const sortBySev = (a: typeof newCases[0], b: typeof newCases[0]) =>
+      (sevRank[a.gravedad] ?? 9) - (sevRank[b.gravedad] ?? 9) || a.cliente.localeCompare(b.cliente);
+    newCases.sort(sortBySev);
+    solvedCases.sort(sortBySev);
 
     setAnalysisResult({
       newCases, solvedCases,
