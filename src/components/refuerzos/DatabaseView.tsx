@@ -209,9 +209,19 @@ export default function DatabaseView() {
             Siguiente →
           </button>
         </div>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          <strong className="text-foreground">{filteredData.length.toLocaleString()}</strong> registros
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleReparse}
+            disabled={reparsing}
+            title="Recalcula las fechas de todos los registros en Firestore con el parser mm/dd/yyyy"
+            className="text-xs px-2.5 py-1.5 rounded-md border border-border bg-card hover:bg-accent disabled:opacity-40 transition-colors font-medium"
+          >
+            {reparsing ? 'Reparseando…' : '🗓 Reparsear fechas'}
+          </button>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            <strong className="text-foreground">{filteredData.length.toLocaleString()}</strong> registros
+          </span>
+        </div>
       </div>
 
       {/* Table */}
