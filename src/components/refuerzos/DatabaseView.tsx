@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { RefuerzoRecord } from '@/types/refuerzos';
+import { toast } from 'sonner';
 
 const ROWS_PER_PAGE = 100;
 
@@ -38,10 +39,26 @@ function EditableCell({ value, onSave }: { value: string; onSave: (v: string) =>
 }
 
 export default function DatabaseView() {
-  const { currentData, drillDownFilter, setDrillDownFilter, getPestName, handleDrillDown, updateRecordField } = useAppContext();
+  const { currentData, drillDownFilter, setDrillDownFilter, getPestName, handleDrillDown, updateRecordField, reparseDates } = useAppContext();
   const [page, setPage] = useState(1);
   const [tableFilters, setTableFilters] = useState<Record<string, string>>({});
   const [sortConfig, setSortConfig] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
+  const [reparsing, setReparsing] = useState(false);
+
+  const handleReparse = useCallback(async () => {
+    if (reparsing) return;
+    if (!confirm('Esto recalculará la fecha de TODOS los registros en Firestore usando el parser actualizado (formato mm/dd/yyyy). ¿Continuar?')) return;
+    setReparsing(true);
+    const tid = toast.loading('Reparseando fechas en Firestore...');
+    try {
+      const r = await reparseDates();
+      toast.success(`Fechas reparseadas: ${r.updated} actualizadas, ${r.unchanged} sin cambios, ${r.failed} sin fecha válida (de ${r.scanned}).`, { id: tid });
+    } catch (err) {
+      toast.error(`Error al reparsear: ${err instanceof Error ? err.message : 'desconocido'}`, { id: tid });
+    } finally {
+      setReparsing(false);
+    }
+  }, [reparseDates, reparsing]);
 
   const handleFilterInput = useCallback((key: string, value: string) => {
     setTableFilters(prev => {
