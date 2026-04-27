@@ -35,6 +35,7 @@ export interface AppContextType extends AppState {
   getPestName: (raw: string) => string;
   updateRecordField: (dedupeKey: string, field: 'observaciones' | 'causaRefuerzo', value: string) => void;
   retryLoad: () => Promise<void>;
+  reparseDates: () => Promise<{ scanned: number; updated: number; unchanged: number; failed: number }>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);

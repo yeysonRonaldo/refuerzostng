@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { RefuerzoRecord, TabName, DrillDownFilter, MetricCounts } from '@/types/refuerzos';
-import { getEffectivePestName, splitMultiTechRecords } from '@/lib/dataProcessor';
-import { updateRecordFieldInFirestore, loadFromFirestore } from '@/lib/firestoreService';
+import { getEffectivePestName, splitMultiTechRecords, parseDate, formatDate } from '@/lib/dataProcessor';
+import { updateRecordFieldInFirestore, loadFromFirestore, reparseAllDatesInFirestore } from '@/lib/firestoreService';
 import { toast } from 'sonner';
 import { AppContext, MONTHS, SyncStatus } from './appContextCore';
 
@@ -224,6 +224,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
   }, []);
 
+  const reparseDates = useCallback(async () => {
+    setSyncStatus('saving');
+    try {
+      const result = await reparseAllDatesInFirestore(parseDate, formatDate);
+      // Refresh local state from Firestore so UI reflects new dates
+      await loadData();
+      setSyncStatus('saved');
+      return result;
+    } catch (err) {
+      console.error('Reparse error:', err);
+      setSyncStatus('error');
+      throw err;
+    }
+  }, [loadData]);
+
   return (
     <AppContext.Provider value={{
       processedData, currentData, activeTab, yearFilter, monthFilter, techFilter,
@@ -233,6 +248,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setDrillDownFilter, toggleGrouping, addPest, removePest,
       handleDrillDown, resetData, getPestName, updateRecordField,
       retryLoad: loadData,
+      reparseDates,
     }}>
       {children}
     </AppContext.Provider>
