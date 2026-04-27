@@ -1,138 +1,56 @@
+## Diagnóstico
 
+Confirmaste que el Excel usa **formato US: `mm/dd/yyyy`** (mes-día-año).
 
-# Plan: Auditoría completa, mejora visual y refactor lógico
+El parser actual en `src/lib/dataProcessor.ts` hace lo contrario: cuando ambos números son ≤ 12 (caso ambiguo), prioriza **`dd/mm/yyyy`** (formato latino). Resultado:
 
-Voy a hacer una pasada profunda al sistema completo: arreglar fallas lógicas detectadas, modernizar la interfaz a un estilo más limpio y profesional, y mejorar el flujo de guardado en Firebase.
+- `04/01/2026` (1 de abril en US) → se interpreta como **1 de enero** ❌
+- `04/02/2026` (2 de abril) → **2 de febrero** ❌
+- `04/03/2026` (3 de abril) → **3 de marzo** ❌
+- `04/15/2026` (15 de abril) → **15 de abril** ✅ (porque 15 > 12, desambigua solo)
 
----
+Por eso abril muestra **378** en lugar de **382**: los registros con día ≤ 12 caen en otros meses (enero, febrero, marzo). No hay filas sin fecha; hay filas con fecha **mal asignada** a otro mes.
 
-## 1. Fallas lógicas detectadas y arreglos
+Además, **estos errores ya están guardados en Firestore** con `dateTimestamp` incorrecto, así que cambiar el parser solo no alcanza: hay que reparsear los datos existentes en `/refuezo/public/data`.
 
-### a) Subida a Firebase sin deduplicación real (crítico)
-- **Problema**: `uploadToFirestore` sube TODOS los registros del Excel sin chequear el `_dedupeKey` existente. Si el usuario sube dos veces el mismo archivo, la base se duplica (de 1,578 → 3,156).
-- **Arreglo**: usar el `dedupeKeyCache` ya existente para filtrar duplicados antes de subir. Mostrar un resumen real `uploaded / skipped`.
+## Cambios
 
-### b) Filtro por mes/año excluye registros sin fecha de forma silenciosa
-- **Problema**: el filtro deja pasar registros sin `dateObj` (`!d.dateObj || …`), pero el filtro por año en realidad debería excluirlos cuando el usuario elige un año específico. Hoy aparecen en TODOS los años.
-- **Arreglo**: cuando el usuario filtra por año/mes específico, los registros sin fecha se EXCLUYEN. Cuando es "Todos", se incluyen.
+### 1. `src/lib/dataProcessor.ts` — invertir la prioridad del parser
 
-### c) Diferencia entre "Total Filtrado" y "Total Plagas"
-- **Problema**: ya documentado. Se mostrará un pequeño indicador "X registros sin fecha (no aparecen en gráficas temporales)" en el InsightCard para transparencia.
+Cuando ambos números son ≤ 12, asumir **`mm/dd/yyyy`** primero (formato US del archivo del usuario). Mantener fallback al formato latino solo si el primero falla, para no romper imports anteriores.
 
-### d) `id` no es estable (se regenera en cada `splitMultiTechRecords`)
-- **Problema**: `RoutesView` usa `item.id` como clave de selección, pero ese ID se reescribe cada vez que cambia `currentData`. Resultado: la selección de rutas se rompe al cambiar filtros.
-- **Arreglo**: usar `_dedupeKey + tecnico` como clave estable.
+```ts
+const candidates = first > 12
+  ? [{ day: first, month: second - 1 }]              // dd/mm forzado (first > 12)
+  : second > 12
+    ? [{ day: second, month: first - 1 }]            // mm/dd forzado (second > 12)
+    : [{ day: second, month: first - 1 },            // ambiguo: mm/dd PRIMERO (US)
+       { day: first, month: second - 1 }];           // fallback dd/mm
+```
 
-### e) Auto-load no se reintenta si falla
-- **Problema**: si Firestore falla en el primer load, queda vacío para siempre (la condición `processedData.length === 0` ya no aplica si el usuario sube algo).
-- **Arreglo**: añadir botón "Reintentar" visible cuando hay error y mover el auto-load al `AppProvider` (no al Sidebar) para que sea independiente de la UI.
+### 2. Reparseo de los datos ya guardados en Firestore
 
-### f) `EditableCell` pierde foco al re-render
-- **Problema menor**: al editar una celda y guardar, otras filas con el mismo cliente se re-renderizan. Funciona pero parpadea.
-- **Arreglo**: memo del row.
+Como las fechas malas ya están persistidas, agregar un botón **"Reparsear fechas"** en `src/components/refuerzos/DatabaseView.tsx` que:
 
-### g) `splitMultiTechRecords` usa `/` como separador → divide nombres con `/` legítimos
-- **Problema**: nombres como "JC/MR" se interpretan como dos técnicos cuando podrían ser iniciales de uno. Mantener el comportamiento pero documentar.
+1. Lea cada documento en `/refuezo/public/data`.
+2. Tome `displayDate` (el string original ya formateado como `dd MMM yyyy`) **o** `originalData['Fecha del Último Servicio']` (el string crudo del Excel guardado en cada doc).
+3. Vuelva a correr el parser nuevo.
+4. Si el `dateTimestamp` resultante difiere del actual, lo actualice junto con `displayDate` y `anio`.
+5. Muestre cuántos registros se corrigieron.
 
-### h) Función `ensureDedupeCache` declarada pero nunca usada
-- **Arreglo**: integrarla en `uploadToFirestore` (resuelve el punto a).
+Esto evita tener que borrar y re-subir el Excel.
 
----
+### 3. Nueva función en `src/lib/firestoreService.ts`
 
-## 2. Mejoras visuales (estilo más moderno, limpio y elegante)
+`reparseAllDates()`: itera todos los docs, reparsea con el parser nuevo desde `originalData['Fecha del Último Servicio']`, y hace batch updates de los que cambien. Devuelve `{ scanned, updated }`.
 
-### a) Sistema de diseño (paleta y tipografía)
-Refinar `index.css`:
-- Paleta más sofisticada: fondos en `slate` muy sutiles, primario en azul más profundo (`221 83% 53%`), bordes con menos contraste.
-- Sombras suaves multinivel (`shadow-sm` → `shadow-elegant`).
-- Radius ligeramente mayor (`0.625rem`) para sensación más moderna.
-- Variables nuevas: `--surface`, `--surface-elevated`, `--ring-glow`.
-- Animaciones globales: `fade-in-up` para tarjetas.
+## Resultado esperado
 
-### b) Header
-- Look glassmorphism sutil (backdrop-blur).
-- Mostrar fecha actual y total filtrado en chip más elegante con ícono.
-- Avatar del usuario a la derecha.
+- Después de aplicar cambios: tocás **"Reparsear fechas"** una sola vez.
+- Abril 2026 debería pasar de **378 → 382**.
+- Los meses adyacentes (enero, febrero, marzo) deberían **bajar** acordemente (los registros migran al mes correcto).
+- No hace falta borrar ni re-subir.
 
-### c) Sidebar
-- Reorganización en secciones colapsables con íconos secundarios.
-- Botón de carga de archivo rediseñado: zona de drag-and-drop visual.
-- Filtros con `Select` de shadcn (mejor look móvil).
-- Indicador visual de "datos cargados" (badge verde con conteo).
-- Separadores sutiles entre secciones.
+## Nota sobre la credencial subida
 
-### d) MetricsView
-- Reordenar grid: KPIs (4 cards) en fila superior con íconos + variación %, luego InsightCard ancho completo, luego gráficas grandes y al final los BarCharts.
-- Cards con micro-animaciones al hover (lift + glow).
-- StatsCards: agregar ícono y mini-sparkline opcional.
-
-### e) Gráficas (SVG)
-- Líneas más suaves (curva Catmull-Rom ya implícita con strokeLinejoin=round, mejorar con path bezier).
-- Gradientes sutiles bajo la línea total.
-- Tooltips reales en hover (no solo `<title>` nativo): pequeño tooltip flotante.
-- Etiquetas de eje con tipografía mejorada.
-
-### f) DatabaseView
-- Header sticky con sombra al scroll.
-- Filtros por columna con ícono de búsqueda.
-- Filas con hover más visible y zebra muy sutil.
-- Badge de gravedad redondeado tipo "pill".
-- Paginación con botones más compactos y selector "filas por página".
-
-### g) RoutesView
-- Tarjetas de cliente más limpias (sin múltiples colores).
-- Botones de acción agrupados en footer con jerarquía clara (primario/secundario).
-
-### h) Toaster
-- Sustituir emojis (✅ ❌) por íconos de Lucide en los `toast.success / error`.
-
----
-
-## 3. Mejoras de guardado (Firebase)
-
-- **Deduplicación real** en upload (ver punto 1.a).
-- **Optimistic updates** en `updateRecordField`: ya funciona, pero añadir rollback si Firestore falla + toast de error.
-- **Indicador de sincronización**: badge en el header que muestra "Guardando…" / "Guardado" / "Error" cuando hay updates pendientes.
-- **Auto-load resiliente**: mover lógica al `AppProvider`, con botón de reintento visible si falla.
-
----
-
-## 4. Archivos a modificar
-
-| Archivo | Cambio |
-|---|---|
-| `src/index.css` | Nueva paleta, sombras, animaciones |
-| `src/lib/firestoreService.ts` | Dedup real en upload, mejor manejo de errores |
-| `src/context/AppContext.tsx` | Auto-load, fix filtros, sync status |
-| `src/components/refuerzos/Header.tsx` | Glassmorphism, sync indicator, avatar |
-| `src/components/refuerzos/Sidebar.tsx` | Drag-drop file, secciones, badges |
-| `src/components/refuerzos/MetricsView.tsx` | Reorden de grid, layout limpio |
-| `src/components/refuerzos/StatsCards.tsx` | Íconos, variación % vs periodo |
-| `src/components/refuerzos/InsightCard.tsx` | Mostrar registros sin fecha |
-| `src/components/refuerzos/PestTrendChart.tsx` | Curvas suaves, tooltip flotante |
-| `src/components/refuerzos/SeverityLineChart.tsx` | Gradiente bajo línea total |
-| `src/components/refuerzos/BarChart.tsx` | Estilo más limpio, hover mejor |
-| `src/components/refuerzos/DatabaseView.tsx` | Header sticky con sombra, pills, pagination mejorada |
-| `src/components/refuerzos/RoutesView.tsx` | Fix key estable, look limpio |
-| `src/pages/Index.tsx` | Pasar status sync al header |
-
----
-
-## 5. Lo que NO voy a tocar
-
-- Lógica de cálculo de métricas (ya está validada y coincide con el Excel original).
-- Estructura de datos en Firestore (sigue compatible con datos existentes).
-- Reglas de roles/admin.
-- Reportes PDF y Reportes Técnicos (funcionan bien, solo refresh visual mínimo si entra dentro del tiempo).
-
----
-
-## 6. Resultado esperado
-
-- Subir el mismo Excel dos veces NO duplica registros.
-- Filtros por año/mes muestran totales coherentes.
-- Selección de rutas se mantiene al cambiar filtros.
-- UI con look moderno, espacios limpios, animaciones sutiles.
-- Indicadores claros de sincronización con Firebase.
-- Sin cambios en los conteos actuales (siguen matching el Excel).
-
+El JSON de Firebase Admin SDK que adjuntaste **no debe quedar en el código** (es una credencial privada de servicio). El reparseo se hará desde el cliente usando la sesión de Firebase Auth ya existente, así que no se usa esa credencial. Te recomiendo **rotarla** en la consola de Google Cloud por las dudas, ya que quedó expuesta en el chat.
