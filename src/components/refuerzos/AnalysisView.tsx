@@ -130,6 +130,22 @@ export default function AnalysisView() {
     });
   };
 
+  const exportToExcel = () => {
+    if (!analysisResult) return;
+    const wb = XLSX.utils.book_new();
+    const mapRow = (r: { cliente: string; plaga: string; tecnico: string; gravedad: string }) => ({
+      Cliente: r.cliente, Plaga: r.plaga, Técnico: r.tecnico, Gravedad: r.gravedad,
+    });
+    const wsSolved = XLSX.utils.json_to_sheet(analysisResult.solvedCases.map(mapRow));
+    const wsNew = XLSX.utils.json_to_sheet(analysisResult.newCases.map(mapRow));
+    const cols = [{ wch: 40 }, { wch: 25 }, { wch: 25 }, { wch: 12 }];
+    wsSolved['!cols'] = cols;
+    wsNew['!cols'] = cols;
+    XLSX.utils.book_append_sheet(wb, wsSolved, 'Solventados');
+    XLSX.utils.book_append_sheet(wb, wsNew, 'Nuevos');
+    XLSX.writeFile(wb, `analisis-cambio-${analysisResult.periodLabel.replace(/\s+/g, '-')}.xlsx`);
+  };
+
   // Chart rendering
   const renderHistoryChart = () => {
     if (historyTrends.length === 0) return <p className="text-center text-muted-foreground/40 py-16">Carga datos para ver la gráfica histórica</p>;
