@@ -120,7 +120,7 @@ export function parseExcelFile(file: File): Promise<{ records: RefuerzoRecord[];
             plagasExternas: plagaExterna,
             gravedad: (String(row['Gravedad'] || 'Bajo')) as 'Alto' | 'Medio' | 'Bajo',
             direccion: String(row['Dirección'] || '-'),
-            anio: parsedDateObj ? parsedDateObj.getFullYear() : (row['Año'] as number | undefined),
+            anio: parsedDateObj ? parsedDateObj.getUTCFullYear() : (row['Año'] as number | undefined),
             diasActivos: parseInt(String(row['Días Activos'])) || 0,
             recomendaciones: String(row['Recomendaciones'] || '-'),
             recomendacionesTotales: parseInt(String(row['Recomendaciones totales'])) || 0,
