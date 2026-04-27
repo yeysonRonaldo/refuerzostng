@@ -23,8 +23,8 @@ export default function AnalysisView() {
   };
   const [selectedMonth, setSelectedMonth] = useState('');
   const [analysisResult, setAnalysisResult] = useState<{
-    newCases: { cliente: string; plaga: string; tecnico: string; gravedad: string }[];
-    solvedCases: { cliente: string; plaga: string; tecnico: string; gravedad: string }[];
+    newCases: { cliente: string; plaga: string; tecnico: string; gravedad: string; direccion: string }[];
+    solvedCases: { cliente: string; plaga: string; tecnico: string; gravedad: string; direccion: string }[];
     periodLabel: string;
   } | null>(null);
 
@@ -105,10 +105,10 @@ export default function AnalysisView() {
 
     // Build maps from key -> sample record (last one wins)
     const buildMap = (data: typeof processedData) => {
-      const map = new Map<string, { tecnico: string; gravedad: string }>();
+      const map = new Map<string, { tecnico: string; gravedad: string; direccion: string }>();
       data.forEach(d => {
         const k = `${d.cliente}|${getCombinedPest(d)}`;
-        map.set(k, { tecnico: d.tecnico || '-', gravedad: d.gravedad || '-' });
+        map.set(k, { tecnico: d.tecnico || '-', gravedad: d.gravedad || '-', direccion: d.direccion || '-' });
       });
       return map;
     };
@@ -116,20 +116,20 @@ export default function AnalysisView() {
     const currentMap = buildMap(currentData);
     const prevMap = buildMap(prevData);
 
-    const newCases: { cliente: string; plaga: string; tecnico: string; gravedad: string }[] = [];
-    const solvedCases: { cliente: string; plaga: string; tecnico: string; gravedad: string }[] = [];
+    const newCases: { cliente: string; plaga: string; tecnico: string; gravedad: string; direccion: string }[] = [];
+    const solvedCases: { cliente: string; plaga: string; tecnico: string; gravedad: string; direccion: string }[] = [];
 
     currentMap.forEach((info, key) => {
       if (!prevMap.has(key)) {
         const [c, p] = key.split('|');
-        newCases.push({ cliente: c, plaga: p, tecnico: info.tecnico, gravedad: info.gravedad });
+        newCases.push({ cliente: c, plaga: p, tecnico: info.tecnico, gravedad: info.gravedad, direccion: info.direccion });
       }
     });
 
     prevMap.forEach((info, key) => {
       if (!currentMap.has(key)) {
         const [c, p] = key.split('|');
-        solvedCases.push({ cliente: c, plaga: p, tecnico: info.tecnico, gravedad: info.gravedad });
+        solvedCases.push({ cliente: c, plaga: p, tecnico: info.tecnico, gravedad: info.gravedad, direccion: info.direccion });
       }
     });
 
@@ -148,12 +148,12 @@ export default function AnalysisView() {
   const exportToExcel = () => {
     if (!analysisResult) return;
     const wb = XLSX.utils.book_new();
-    const mapRow = (r: { cliente: string; plaga: string; tecnico: string; gravedad: string }) => ({
-      Cliente: r.cliente, Plaga: r.plaga, Técnico: r.tecnico, Gravedad: r.gravedad,
+    const mapRow = (r: { cliente: string; plaga: string; tecnico: string; gravedad: string; direccion: string }) => ({
+      Cliente: r.cliente, Dirección: r.direccion, Plaga: r.plaga, Técnico: r.tecnico, Gravedad: r.gravedad,
     });
     const wsSolved = XLSX.utils.json_to_sheet(analysisResult.solvedCases.map(mapRow));
     const wsNew = XLSX.utils.json_to_sheet(analysisResult.newCases.map(mapRow));
-    const cols = [{ wch: 40 }, { wch: 25 }, { wch: 25 }, { wch: 12 }];
+    const cols = [{ wch: 40 }, { wch: 45 }, { wch: 25 }, { wch: 25 }, { wch: 12 }];
     wsSolved['!cols'] = cols;
     wsNew['!cols'] = cols;
     XLSX.utils.book_append_sheet(wb, wsSolved, 'Solventados');
@@ -300,6 +300,9 @@ export default function AnalysisView() {
                       <span>🐛 {item.plaga}</span>
                       <span>👷 {item.tecnico}</span>
                     </div>
+                    {item.direccion && item.direccion !== '-' && (
+                      <div className="text-xs text-muted-foreground/80 mt-0.5">📍 {item.direccion}</div>
+                    )}
                   </div>
                 ))
               )}
@@ -333,6 +336,9 @@ export default function AnalysisView() {
                       <span>🐛 {item.plaga}</span>
                       <span>👷 {item.tecnico}</span>
                     </div>
+                    {item.direccion && item.direccion !== '-' && (
+                      <div className="text-xs text-muted-foreground/80 mt-0.5">📍 {item.direccion}</div>
+                    )}
                   </div>
                 ))
               )}
