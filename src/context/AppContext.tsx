@@ -9,6 +9,9 @@ export { useAppContext } from './appContextCore';
 export type { SyncStatus } from './appContextCore';
 
 
+const getRecordYear = (date: Date) => date.getUTCFullYear();
+const getRecordMonth = (date: Date) => date.getUTCMonth();
+
 function computeUniquePests(data: RefuerzoRecord[], isGrouped: boolean): string[] {
   const set = new Set<string>();
   data.forEach(r => {
@@ -55,8 +58,8 @@ function computeMetrics(data: RefuerzoRecord[], isGrouped: boolean, selectedPest
     if (r.gravedad === 'Alto' && r.diasActivos > 15) counts.criticalCases.push(r);
 
     if (r.dateObj) {
-      const y = r.dateObj.getFullYear();
-      const m = r.dateObj.getMonth();
+      const y = getRecordYear(r.dateObj);
+      const m = getRecordMonth(r.dateObj);
       const key = `${y}-${String(m + 1).padStart(2, '0')}`;
 
       if (!counts.timeline[key]) {
@@ -130,10 +133,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // When a specific year/month filter is set, exclude records without dates
       const matchesYear = yearFilter === 'all'
         ? true
-        : !!d.dateObj && d.dateObj.getFullYear().toString() === yearFilter;
+        : !!d.dateObj && getRecordYear(d.dateObj).toString() === yearFilter;
       const matchesMonth = monthFilter === 'all'
         ? true
-        : !!d.dateObj && d.dateObj.getMonth().toString() === monthFilter;
+        : !!d.dateObj && getRecordMonth(d.dateObj).toString() === monthFilter;
       const matchesTech = techFilter === 'all' || d.tecnico === techFilter;
       return matchesYear && matchesMonth && matchesTech;
     });

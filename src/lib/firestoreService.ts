@@ -31,7 +31,7 @@ function serializeRecord(record: RefuerzoRecord): Record<string, unknown> {
     plagasExternas: record.plagasExternas,
     gravedad: record.gravedad,
     direccion: record.direccion,
-    anio: record.anio || null,
+    anio: record.dateObj ? record.dateObj.getUTCFullYear() : record.anio || null,
     diasActivos: record.diasActivos,
     recomendaciones: record.recomendaciones,
     recomendacionesTotales: record.recomendacionesTotales,
@@ -253,7 +253,7 @@ export async function reparseAllDatesInFirestore(
       batch.update(docSnap.ref, {
         dateTimestamp: newTs,
         displayDate: formatDateFn(newDate),
-        anio: newDate.getFullYear(),
+        anio: newDate.getUTCFullYear(),
       });
       writes++;
       updated++;
