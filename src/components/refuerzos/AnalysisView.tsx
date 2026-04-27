@@ -247,8 +247,18 @@ export default function AnalysisView() {
               ) : (
                 analysisResult.solvedCases.map((item, i) => (
                   <div key={i} className="px-3 py-2 border-b border-border/50 text-sm hover:bg-accent/30">
-                    <span className="font-semibold block">{item.cliente}</span>
-                    <span className="text-xs text-muted-foreground">{item.plaga}</span>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="font-semibold flex-1">{item.cliente}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                        item.gravedad === 'Alto' ? 'bg-destructive/10 text-destructive' :
+                        item.gravedad === 'Medio' ? 'bg-warning/10 text-warning' :
+                        'bg-success/10 text-success'
+                      }`}>{item.gravedad}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-x-2">
+                      <span>🐛 {item.plaga}</span>
+                      <span>👷 {item.tecnico}</span>
+                    </div>
                   </div>
                 ))
               )}
@@ -270,8 +280,18 @@ export default function AnalysisView() {
               ) : (
                 analysisResult.newCases.map((item, i) => (
                   <div key={i} className="px-3 py-2 border-b border-border/50 text-sm hover:bg-accent/30">
-                    <span className="font-semibold block">{item.cliente}</span>
-                    <span className="text-xs text-muted-foreground">{item.plaga}</span>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="font-semibold flex-1">{item.cliente}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                        item.gravedad === 'Alto' ? 'bg-destructive/10 text-destructive' :
+                        item.gravedad === 'Medio' ? 'bg-warning/10 text-warning' :
+                        'bg-success/10 text-success'
+                      }`}>{item.gravedad}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-x-2">
+                      <span>🐛 {item.plaga}</span>
+                      <span>👷 {item.tecnico}</span>
+                    </div>
                   </div>
                 ))
               )}
