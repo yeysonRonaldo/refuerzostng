@@ -15,6 +15,8 @@ const MONTH_NAMES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
+const getRecordYear = (date: Date) => date.getUTCFullYear();
+
 interface SidebarProps {
   open?: boolean;
   onClose?: () => void;
@@ -42,7 +44,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   ];
 
   const years = Array.from(new Set(
-    processedData.map(d => d.dateObj?.getFullYear() ?? d.anio).filter(Boolean)
+    processedData.map(d => d.dateObj ? getRecordYear(d.dateObj) : d.anio).filter(Boolean)
   )).sort((a, b) => (b as number) - (a as number));
 
   const technicians = Array.from(new Set(
@@ -105,7 +107,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     try {
       const deleted = await deleteYearFromFirestore(year);
       setProcessedData(processedData.filter(r => {
-        const rYear = r.dateObj?.getFullYear() ?? r.anio;
+        const rYear = r.dateObj ? getRecordYear(r.dateObj) : r.anio;
         return rYear !== year;
       }));
       toast.success(`${deleted} registros del año ${year} eliminados.`);
