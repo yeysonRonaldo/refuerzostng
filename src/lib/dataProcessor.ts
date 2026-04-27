@@ -5,7 +5,7 @@ export function parseDate(raw: unknown): Date | null {
   if (!raw) return null;
   if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
   if (typeof raw === 'number') {
-    const date = new Date((raw - 25569) * 86400 * 1000);
+    const date = new Date(Date.UTC(1899, 11, 30 + raw));
     return isNaN(date.getTime()) ? null : date;
   }
   const str = String(raw).trim();
@@ -29,11 +29,11 @@ export function parseDate(raw: unknown): Date | null {
            { day: first, month: second - 1 }];                  // fallback dd/mm
 
     for (const candidate of candidates) {
-      const parsed = new Date(year, candidate.month, candidate.day);
+      const parsed = new Date(Date.UTC(year, candidate.month, candidate.day));
       if (
-        parsed.getFullYear() === year &&
-        parsed.getMonth() === candidate.month &&
-        parsed.getDate() === candidate.day
+        parsed.getUTCFullYear() === year &&
+        parsed.getUTCMonth() === candidate.month &&
+        parsed.getUTCDate() === candidate.day
       ) return parsed;
     }
   }
@@ -44,7 +44,7 @@ export function parseDate(raw: unknown): Date | null {
 
 export function formatDate(d: Date | null): string {
   if (!d) return '-';
-  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
 /**
