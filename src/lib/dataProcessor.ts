@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { RefuerzoRecord } from '@/types/refuerzos';
 
-function parseDate(raw: unknown): Date | null {
+export function parseDate(raw: unknown): Date | null {
   if (!raw) return null;
   if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
   if (typeof raw === 'number') {
@@ -19,11 +19,14 @@ function parseDate(raw: unknown): Date | null {
     let year = parseInt(parts[3], 10);
     if (year < 100) year += 2000;
 
+    // Excel source uses US format mm/dd/yyyy. When ambiguous (both <=12),
+    // prefer mm/dd; fall back to dd/mm only as a safety net.
     const candidates = first > 12
-      ? [{ day: first, month: second - 1 }]
+      ? [{ day: first, month: second - 1 }]                     // dd/mm forced
       : second > 12
-        ? [{ day: second, month: first - 1 }]
-        : [{ day: first, month: second - 1 }, { day: second, month: first - 1 }];
+        ? [{ day: second, month: first - 1 }]                   // mm/dd forced
+        : [{ day: second, month: first - 1 },                   // ambiguous: mm/dd first (US)
+           { day: first, month: second - 1 }];                  // fallback dd/mm
 
     for (const candidate of candidates) {
       const parsed = new Date(year, candidate.month, candidate.day);
@@ -39,7 +42,7 @@ function parseDate(raw: unknown): Date | null {
   return null;
 }
 
-function formatDate(d: Date | null): string {
+export function formatDate(d: Date | null): string {
   if (!d) return '-';
   return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
 }
