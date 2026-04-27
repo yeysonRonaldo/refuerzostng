@@ -49,7 +49,7 @@ export default function ReportsView() {
     processedData.forEach(r => {
       if (activeClients.includes(r.cliente) && r.dateObj) {
         const key = `${r.cliente}|${getEffectivePestName(r.plaga, isGrouped)}`;
-        const mKey = `${r.dateObj.getFullYear()}-${r.dateObj.getMonth()}`;
+        const mKey = `${r.dateObj.getUTCFullYear()}-${r.dateObj.getUTCMonth()}`;
         if (!recMap[key]) recMap[key] = new Set();
         recMap[key].add(mKey);
       }
@@ -67,7 +67,7 @@ export default function ReportsView() {
     const monthlyActivity: Record<string, number> = {};
     currentData.forEach(r => {
       if (r.dateObj) {
-        const key = `${r.dateObj.getFullYear()}-${String(r.dateObj.getMonth() + 1).padStart(2, '0')}`;
+        const key = `${r.dateObj.getUTCFullYear()}-${String(r.dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
         monthlyActivity[key] = (monthlyActivity[key] || 0) + 1;
       }
     });

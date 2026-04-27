@@ -21,7 +21,7 @@ export default function InsightCard() {
   const monthlyCounts: Record<string, number> = {};
   currentData.forEach(d => {
     if (d.dateObj) {
-      const k = `${d.dateObj.getFullYear()}-${String(d.dateObj.getMonth() + 1).padStart(2, '0')}`;
+      const k = `${d.dateObj.getUTCFullYear()}-${String(d.dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
       monthlyCounts[k] = (monthlyCounts[k] || 0) + 1;
     }
   });
