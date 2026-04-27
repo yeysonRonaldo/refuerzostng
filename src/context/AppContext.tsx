@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { RefuerzoRecord, MetricCounts } from '@/types/refuerzos';
+import { RefuerzoRecord, TabName, DrillDownFilter, MetricCounts } from '@/types/refuerzos';
 import { getEffectivePestName, splitMultiTechRecords } from '@/lib/dataProcessor';
 import { updateRecordFieldInFirestore, loadFromFirestore } from '@/lib/firestoreService';
 import { toast } from 'sonner';
