@@ -8,8 +8,8 @@ export default function AnalysisView() {
   const { processedData, getPestName } = useAppContext();
   const [selectedMonth, setSelectedMonth] = useState('');
   const [analysisResult, setAnalysisResult] = useState<{
-    newCases: { cliente: string; plaga: string }[];
-    solvedCases: { cliente: string; plaga: string }[];
+    newCases: { cliente: string; plaga: string; tecnico: string; gravedad: string }[];
+    solvedCases: { cliente: string; plaga: string; tecnico: string; gravedad: string }[];
     periodLabel: string;
   } | null>(null);
 
