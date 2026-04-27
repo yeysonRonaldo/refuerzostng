@@ -229,9 +229,18 @@ export default function AnalysisView() {
           </div>
         </div>
         {analysisResult && (
-          <div className="text-right">
-            <div className="text-xs text-muted-foreground">Comparación</div>
-            <div className="font-bold text-foreground">{analysisResult.periodLabel}</div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-xs text-muted-foreground">Comparación</div>
+              <div className="font-bold text-foreground">{analysisResult.periodLabel}</div>
+            </div>
+            <button
+              onClick={exportToExcel}
+              className="bg-success text-success-foreground px-3 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+              title="Descargar Solventados y Nuevos en Excel"
+            >
+              ⬇ Excel
+            </button>
           </div>
         )}
       </div>
