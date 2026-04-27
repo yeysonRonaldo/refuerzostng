@@ -114,57 +114,105 @@ export default function SeverityLineChart() {
             return <path d={area} fill="url(#totalSeverityGradient)" />;
           })()}
 
-          {lines.map(l => {
-            const pts = dataArray.map((d, i) => ({
-              x: getX(i),
-              y: getY((d as unknown as Record<string, number>)[l.prop] || 0),
-            }));
-            const path = smoothPath(pts);
-            return (
-              <g key={l.prop}>
-                <path
-                  d={path}
-                  fill="none"
-                  stroke={l.color}
-                  strokeWidth={l.prop === 'total' ? 3 : 2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                {dataArray.map((d, i) => {
+          {/* Compute label offsets per data point to avoid overlap */}
+          {(() => {
+            const MIN_GAP = 12; // px in viewBox units
+            // labelOffsets[i][prop] = vertical offset relative to point (negative = above)
+            const labelOffsets: Record<number, Record<string, number>> = {};
+            dataArray.forEach((d, i) => {
+              // Build entries: prop, value, base y position
+              const entries = lines
+                .map(l => {
                   const val = (d as unknown as Record<string, number>)[l.prop] || 0;
-                  if (val === 0 && l.prop !== 'total') return null;
-                  return (
-                    <g key={i}>
-                      <circle
-                        cx={getX(i)}
-                        cy={getY(val)}
-                        r={4}
-                        fill={l.prop === 'total' ? l.color : 'white'}
-                        stroke={l.color}
-                        strokeWidth={2}
-                        className="cursor-pointer"
-                        onClick={() => handleDrillDown('timeline', d.rawKey, l.prop)}
-                      >
-                        <title>{d.label} - {l.label}: {val}</title>
-                      </circle>
-                      {val > 0 && (
-                        <text
-                          x={getX(i)}
-                          y={getY(val) - 12}
-                          textAnchor="middle"
-                          className="text-[10px] font-bold cursor-pointer"
-                          style={{ fill: l.color }}
+                  return { prop: l.prop, val, y: getY(val) };
+                })
+                .filter(e => e.val > 0 || e.prop === 'total');
+
+              // Sort by y ascending (top to bottom on screen)
+              entries.sort((a, b) => a.y - b.y);
+
+              // Default: label above point (offset -12). Detect collisions and flip below.
+              const placed: { prop: string; labelY: number }[] = [];
+              entries.forEach(e => {
+                let labelY = e.y - 12; // above
+                // Check collision with already placed labels
+                const collidesAbove = placed.some(p => Math.abs(p.labelY - labelY) < MIN_GAP);
+                if (collidesAbove) {
+                  const labelYBelow = e.y + 14; // below point
+                  const collidesBelow = placed.some(p => Math.abs(p.labelY - labelYBelow) < MIN_GAP);
+                  if (!collidesBelow) {
+                    labelY = labelYBelow;
+                  } else {
+                    // Stack further above
+                    let candidate = labelY - MIN_GAP;
+                    while (placed.some(p => Math.abs(p.labelY - candidate) < MIN_GAP)) {
+                      candidate -= MIN_GAP;
+                    }
+                    labelY = candidate;
+                  }
+                }
+                placed.push({ prop: e.prop, labelY });
+              });
+
+              labelOffsets[i] = {};
+              placed.forEach(p => {
+                labelOffsets[i][p.prop] = p.labelY;
+              });
+            });
+
+            return lines.map(l => {
+              const pts = dataArray.map((d, i) => ({
+                x: getX(i),
+                y: getY((d as unknown as Record<string, number>)[l.prop] || 0),
+              }));
+              const path = smoothPath(pts);
+              return (
+                <g key={l.prop}>
+                  <path
+                    d={path}
+                    fill="none"
+                    stroke={l.color}
+                    strokeWidth={l.prop === 'total' ? 3 : 2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {dataArray.map((d, i) => {
+                    const val = (d as unknown as Record<string, number>)[l.prop] || 0;
+                    if (val === 0 && l.prop !== 'total') return null;
+                    const labelY = labelOffsets[i]?.[l.prop] ?? getY(val) - 12;
+                    return (
+                      <g key={i}>
+                        <circle
+                          cx={getX(i)}
+                          cy={getY(val)}
+                          r={4}
+                          fill={l.prop === 'total' ? l.color : 'white'}
+                          stroke={l.color}
+                          strokeWidth={2}
+                          className="cursor-pointer"
                           onClick={() => handleDrillDown('timeline', d.rawKey, l.prop)}
                         >
-                          {val}
-                        </text>
-                      )}
-                    </g>
-                  );
-                })}
-              </g>
-            );
-          })}
+                          <title>{d.label} - {l.label}: {val}</title>
+                        </circle>
+                        {val > 0 && (
+                          <text
+                            x={getX(i)}
+                            y={labelY}
+                            textAnchor="middle"
+                            className="text-[10px] font-bold cursor-pointer"
+                            style={{ fill: l.color }}
+                            onClick={() => handleDrillDown('timeline', d.rawKey, l.prop)}
+                          >
+                            {val}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+                </g>
+              );
+            });
+          })()}
 
           {/* Hover capture columns */}
           {dataArray.map((d, i) => (
