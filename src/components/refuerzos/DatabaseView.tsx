@@ -4,6 +4,7 @@ import { RefuerzoRecord } from '@/types/refuerzos';
 import { toast } from 'sonner';
 
 const ROWS_PER_PAGE = 100;
+const getRecordMonthKey = (date: Date) => `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 
 function EditableCell({ value, onSave }: { value: string; onSave: (v: string) => void }) {
   const [editing, setEditing] = useState(false);
@@ -92,12 +93,12 @@ export default function DatabaseView() {
         if (type === 'priority') return d.diasActivos > 15;
         if (type === 'pest-trend') {
           if (!d.dateObj) return false;
-          const key = `${d.dateObj.getFullYear()}-${String(d.dateObj.getMonth() + 1).padStart(2, '0')}`;
+          const key = getRecordMonthKey(d.dateObj);
           return key === value && effectivePlaga === extra;
         }
         if (type === 'timeline') {
           if (!d.dateObj) return false;
-          const key = `${d.dateObj.getFullYear()}-${String(d.dateObj.getMonth() + 1).padStart(2, '0')}`;
+          const key = getRecordMonthKey(d.dateObj);
           if (extra === 'total') return key === value;
           const gravMatch = (extra === 'alto' && d.gravedad === 'Alto') ||
             (extra === 'medio' && d.gravedad === 'Medio') ||
