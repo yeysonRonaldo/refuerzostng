@@ -42,7 +42,7 @@ export function parseDate(raw: unknown): Date | null {
   return null;
 }
 
-function formatDate(d: Date | null): string {
+export function formatDate(d: Date | null): string {
   if (!d) return '-';
   return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
 }
