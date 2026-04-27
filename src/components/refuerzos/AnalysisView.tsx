@@ -71,7 +71,7 @@ export default function AnalysisView() {
       const m = d.dateObj.getUTCMonth();
       const key = `${y}-${String(m + 1).padStart(2, '0')}`;
       if (!monthMap[key]) monthMap[key] = { keys: new Set() };
-      monthMap[key].keys.add(`${d.cliente}|${getPestName(d.plaga)}`);
+      monthMap[key].keys.add(`${d.cliente}|${getCombinedPest(d)}`);
     });
 
     const sortedKeys = Object.keys(monthMap).sort();
