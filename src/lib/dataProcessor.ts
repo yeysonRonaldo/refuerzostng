@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { RefuerzoRecord } from '@/types/refuerzos';
 
-function parseDate(raw: unknown): Date | null {
+export function parseDate(raw: unknown): Date | null {
   if (!raw) return null;
   if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
   if (typeof raw === 'number') {
