@@ -3,21 +3,36 @@ import { RefuerzoRecord } from '@/types/refuerzos';
 
 function parseDate(raw: unknown): Date | null {
   if (!raw) return null;
-  if (raw instanceof Date) return raw;
+  if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
   if (typeof raw === 'number') {
     const date = new Date((raw - 25569) * 86400 * 1000);
     return isNaN(date.getTime()) ? null : date;
   }
-  const str = String(raw);
-  // Try mm/dd/yy or mm/dd/yyyy (US format from Excel)
-  const slashParts = str.split('/');
-  if (slashParts.length === 3) {
-    let year = parseInt(slashParts[2]);
+  const str = String(raw).trim();
+
+  // Prefer Spanish/LatAm dates from the uploaded Excel: dd/mm/yyyy.
+  // Also accepts dd-mm-yyyy and avoids JS auto-overflow (e.g. 31/04 -> May).
+  const parts = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+  if (parts) {
+    const first = parseInt(parts[1], 10);
+    const second = parseInt(parts[2], 10);
+    let year = parseInt(parts[3], 10);
     if (year < 100) year += 2000;
-    const month = parseInt(slashParts[0]) - 1;
-    const day = parseInt(slashParts[1]);
-    const parsed = new Date(year, month, day);
-    if (!isNaN(parsed.getTime())) return parsed;
+
+    const candidates = first > 12
+      ? [{ day: first, month: second - 1 }]
+      : second > 12
+        ? [{ day: second, month: first - 1 }]
+        : [{ day: first, month: second - 1 }, { day: second, month: first - 1 }];
+
+    for (const candidate of candidates) {
+      const parsed = new Date(year, candidate.month, candidate.day);
+      if (
+        parsed.getFullYear() === year &&
+        parsed.getMonth() === candidate.month &&
+        parsed.getDate() === candidate.day
+      ) return parsed;
+    }
   }
   const d = new Date(str);
   if (!isNaN(d.getTime())) return d;
