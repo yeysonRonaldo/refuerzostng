@@ -107,7 +107,7 @@ export default function AnalysisView() {
     const buildMap = (data: typeof processedData) => {
       const map = new Map<string, { tecnico: string; gravedad: string }>();
       data.forEach(d => {
-        const k = `${d.cliente}|${getPestName(d.plaga)}`;
+        const k = `${d.cliente}|${getCombinedPest(d)}`;
         map.set(k, { tecnico: d.tecnico || '-', gravedad: d.gravedad || '-' });
       });
       return map;
