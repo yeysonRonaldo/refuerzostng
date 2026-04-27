@@ -95,15 +95,19 @@ export default function ReportsView() {
       </tr>`
     ).join('');
 
-    // Build pest trend table
+    // Build pest trend table — incluye columna "Otros" si hay registros sin clasificar en plagas seleccionadas
+    const hasOtros = pestTrendData.some(pt => (pt.counts['Otros'] || 0) > 0);
     const pestTrendRows = pestTrendData.map(pt => {
       const pestCols = selectedPests.map(p => `<td style="padding:6px;text-align:center;">${pt.counts[p] || 0}</td>`).join('');
-      return `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:6px;">${pt.label}</td>${pestCols}</tr>`;
+      const otrosCol = hasOtros ? `<td style="padding:6px;text-align:center;color:#64748b;">${pt.counts['Otros'] || 0}</td>` : '';
+      const total = selectedPests.reduce((s, p) => s + (pt.counts[p] || 0), 0) + (pt.counts['Otros'] || 0);
+      const totalCol = `<td style="padding:6px;text-align:center;font-weight:700;">${total}</td>`;
+      return `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:6px;">${pt.label}</td>${pestCols}${otrosCol}${totalCol}</tr>`;
     }).join('');
 
     const pestTrendHeaders = selectedPests.map((p, i) =>
       `<th style="padding:6px;text-align:center;color:${PEST_COLORS[i % PEST_COLORS.length]};">${p}</th>`
-    ).join('');
+    ).join('') + (hasOtros ? `<th style="padding:6px;text-align:center;color:#64748b;">Otros</th>` : '') + `<th style="padding:6px;text-align:center;">Total</th>`;
 
     // === SVG Chart Generators ===
     const svgW = 750, svgH = 250, pad = { top: 20, right: 30, bottom: 50, left: 50 };

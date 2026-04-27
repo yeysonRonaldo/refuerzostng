@@ -71,12 +71,11 @@ function computeMetrics(data: RefuerzoRecord[], isGrouped: boolean, selectedPest
       }
       counts.timeline[key][gKey as 'alto' | 'medio' | 'bajo']++;
 
-      if (selectedPests.includes(p)) {
-        if (!counts.pestTrend[key]) {
-          counts.pestTrend[key] = { label: `${MONTHS[m]} ${String(y).substring(2)}`, sortKey: key, counts: {} };
-        }
-        counts.pestTrend[key].counts[p] = (counts.pestTrend[key].counts[p] || 0) + 1;
+      if (!counts.pestTrend[key]) {
+        counts.pestTrend[key] = { label: `${MONTHS[m]} ${String(y).substring(2)}`, sortKey: key, counts: {} };
       }
+      const bucket = selectedPests.includes(p) ? p : 'Otros';
+      counts.pestTrend[key].counts[bucket] = (counts.pestTrend[key].counts[bucket] || 0) + 1;
     }
   });
 
