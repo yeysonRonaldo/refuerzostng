@@ -45,8 +45,9 @@ export default function AnalysisView() {
   const recurrence = useMemo(() => {
     const map: Record<string, { cliente: string; plaga: string; months: Set<string>; lastDate: Date | null }> = {};
     processedData.forEach(r => {
-      if (!r.cliente || !r.plaga) return;
-      const pName = getPestName(r.plaga);
+      if (!r.cliente) return;
+      const pName = getCombinedPest(r);
+      if (pName === '---') return;
       const key = `${r.cliente}|${pName}`;
       if (!map[key]) map[key] = { cliente: r.cliente, plaga: pName, months: new Set(), lastDate: r.dateObj };
       if (r.dateObj) {
