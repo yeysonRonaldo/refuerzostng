@@ -679,6 +679,8 @@ export default function MonthlyProjectionView() {
           context={detail}
           monthLabel={labelOf(currentMonth)}
           records={currStats.records}
+          prevRecords={prevStats.records}
+          prevPestKeys={prevStats.pestKeys}
           getPestName={getPestName}
           onClose={() => setDetail(null)}
         />
