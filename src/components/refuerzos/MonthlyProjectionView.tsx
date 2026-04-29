@@ -244,7 +244,7 @@ export default function MonthlyProjectionView() {
       const p = prevStats.byTech.get(name) ?? { total: 0, high: 0 };
       const delta = c.total - p.total;
       const pct = pctChange(c.total, p.total);
-      const flag = p.total === 0 && c.total > 0 ? 'nuevo'
+      const flag: 'nuevo' | 'sin-casos' | null = p.total === 0 && c.total > 0 ? 'nuevo'
         : c.total === 0 && p.total > 0 ? 'sin-casos'
         : null;
       return { name, current: c.total, previous: p.total, delta, pct, currHigh: c.high, prevHigh: p.high, flag };
