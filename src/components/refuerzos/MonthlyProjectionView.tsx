@@ -755,7 +755,13 @@ function PestBlock({ title, tone, rows, maxVal, onSelect }: { title: string; ton
           const prevW = (r.previous / maxVal) * 100;
           const currW = (r.current / maxVal) * 100;
           return (
-            <div key={r.name} className="text-xs">
+            <button
+              type="button"
+              key={r.name}
+              onClick={() => onSelect(r.name)}
+              className="text-xs w-full text-left rounded-md p-1.5 hover:bg-accent/40 transition cursor-pointer"
+              title="Ver detalle"
+            >
               <div className="flex justify-between mb-1">
                 <span className="font-semibold text-foreground truncate pr-2">{r.name}</span>
                 <span className={`font-bold ${tone === 'good' ? 'text-success' : 'text-destructive'}`}>
@@ -778,7 +784,7 @@ function PestBlock({ title, tone, rows, maxVal, onSelect }: { title: string; ton
                   <span className="w-8 text-right tabular-nums font-semibold">{r.current}</span>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
