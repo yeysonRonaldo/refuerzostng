@@ -838,27 +838,57 @@ function DetailModal({
   context,
   monthLabel,
   records,
+  prevRecords,
+  prevPestKeys,
   getPestName,
   onClose,
 }: {
   context: DetailContext;
   monthLabel: string;
   records: RefuerzoRecord[];
+  prevRecords: RefuerzoRecord[];
+  prevPestKeys: Set<string>;
   getPestName: (raw: string) => string;
   onClose: () => void;
 }) {
   // Filter records of the current month by selected entity
   const filtered = useMemo(() => {
+    if (context.kind === 'kpi') {
+      if (context.kpi === 'total') return records;
+      if (context.kpi === 'high') return records.filter(r => r.gravedad === 'Alto');
+      if (context.kpi === 'mid') return records.filter(r => r.gravedad === 'Medio');
+      if (context.kpi === 'low') return records.filter(r => r.gravedad === 'Bajo');
+      if (context.kpi === 'nuevos') {
+        return records.filter(r => {
+          const k = `${r.cliente}|${buildCombinedPest(r, getPestName)}`;
+          return !prevPestKeys.has(k);
+        });
+      }
+      if (context.kpi === 'persistentes') {
+        return records.filter(r => {
+          const k = `${r.cliente}|${buildCombinedPest(r, getPestName)}`;
+          return prevPestKeys.has(k);
+        });
+      }
+      if (context.kpi === 'solventados') {
+        // Records from previous month not present anymore
+        const currKeys = new Set(records.map(r => `${r.cliente}|${buildCombinedPest(r, getPestName)}`));
+        return prevRecords.filter(r => {
+          const k = `${r.cliente}|${buildCombinedPest(r, getPestName)}`;
+          return !currKeys.has(k);
+        });
+      }
+      return records;
+    }
     return records.filter(r => {
       if (context.kind === 'tecnico') return r.tecnico === context.name;
       if (context.kind === 'cliente') return r.cliente === context.name;
       // plaga: matches if combined contains the selected pest name
       const combined = buildCombinedPest(r, getPestName);
       if (combined === context.name) return true;
-      // plaga can be combined "A / B"; check parts
       return combined.split(' / ').includes(context.name);
     });
-  }, [records, context, getPestName]);
+  }, [records, prevRecords, prevPestKeys, context, getPestName]);
 
   // Order: severity Alto > Medio > Bajo, then date desc
   const ordered = useMemo(() => {
@@ -881,8 +911,13 @@ function DetailModal({
 
   const kindLabel = context.kind === 'tecnico' ? 'Técnico'
     : context.kind === 'cliente' ? 'Cliente'
-    : 'Plaga';
-  const KindIcon = context.kind === 'tecnico' ? User : context.kind === 'cliente' ? Building2 : Bug;
+    : context.kind === 'plaga' ? 'Plaga'
+    : 'KPI';
+  const titleText = context.kind === 'kpi' ? context.label : context.name;
+  const KindIcon = context.kind === 'tecnico' ? User
+    : context.kind === 'cliente' ? Building2
+    : context.kind === 'plaga' ? Bug
+    : ShieldAlert;
 
   return (
     <div
