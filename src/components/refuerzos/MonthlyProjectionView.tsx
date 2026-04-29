@@ -104,6 +104,7 @@ function emptyStats(): PeriodStats {
 export default function MonthlyProjectionView() {
   const { processedData, getPestName, yearFilter, techFilter, isGrouped, handleDrillDown } = useAppContext();
   const getCombinedPest = (r: RefuerzoRecord) => buildCombinedPest(r, getPestName);
+  const [detail, setDetail] = useState<DetailContext | null>(null);
 
   // Available months (respecting year filter)
   const monthOptions = useMemo(() => {
