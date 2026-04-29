@@ -623,7 +623,13 @@ export default function MonthlyProjectionView() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {kpis.map(k => <KpiCard key={k.label} data={k} />)}
+        {kpis.map(k => (
+          <KpiCard
+            key={k.label}
+            data={k}
+            onClick={k.kpi ? () => setDetail({ kind: 'kpi', kpi: k.kpi!, label: k.label }) : undefined}
+          />
+        ))}
       </div>
 
       {/* Tech ranking */}
