@@ -43,7 +43,7 @@ function deltaTone(delta: number, direction: Direction): 'good' | 'bad' | 'flat'
   return delta > 0 ? 'good' : 'bad';
 }
 
-function KpiCard({ data }: { data: KpiCardData }) {
+function KpiCard({ data, onClick }: { data: KpiCardData; onClick?: () => void }) {
   const delta = data.current - data.previous;
   const pct = pctChange(data.current, data.previous);
   const tone = deltaTone(delta, data.direction);
@@ -54,15 +54,22 @@ function KpiCard({ data }: { data: KpiCardData }) {
     : tone === 'bad' ? 'text-destructive bg-destructive/10 border-destructive/20'
     : 'text-muted-foreground bg-muted/40 border-border';
 
-  const Icon = tone === 'good' ? ArrowDown : tone === 'bad' ? ArrowUp : Minus;
-  // Flip arrow direction by semantics: if higherIsBetter and good → up arrow
   const ArrowIcon = (() => {
     if (delta === 0) return Minus;
     return delta > 0 ? ArrowUp : ArrowDown;
   })();
 
+  const clickable = !!onClick;
+
   return (
-    <div className="bg-card rounded-lg border border-border p-4 flex flex-col gap-2">
+    <div
+      onClick={onClick}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } } : undefined}
+      className={`bg-card rounded-lg border border-border p-4 flex flex-col gap-2 transition ${clickable ? 'cursor-pointer hover:border-primary/40 hover:shadow-sm hover:-translate-y-0.5' : ''}`}
+      title={clickable ? 'Ver detalle' : undefined}
+    >
       <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{data.label}</div>
       <div className="flex items-end justify-between gap-2">
         <div className="text-2xl font-bold text-foreground">{fmt(data.current)}</div>
