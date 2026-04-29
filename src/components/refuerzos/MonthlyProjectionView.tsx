@@ -623,19 +623,21 @@ export default function MonthlyProjectionView() {
             title="Técnicos que mejoraron"
             tone="good"
             rows={techRanking.mejoraron}
+            onSelect={(name) => setDetail({ kind: 'tecnico', name })}
           />
           <TechBlock
             title="Técnicos que empeoraron"
             tone="bad"
             rows={techRanking.empeoraron}
+            onSelect={(name) => setDetail({ kind: 'tecnico', name })}
           />
         </div>
       )}
 
       {/* Pest ranking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <PestBlock title="Plagas en crecimiento" tone="bad" rows={pestRanking.creciendo} maxVal={pestRanking.maxVal} />
-        <PestBlock title="Plagas en disminución" tone="good" rows={pestRanking.disminuyendo} maxVal={pestRanking.maxVal} />
+        <PestBlock title="Plagas en crecimiento" tone="bad" rows={pestRanking.creciendo} maxVal={pestRanking.maxVal} onSelect={(name) => setDetail({ kind: 'plaga', name })} />
+        <PestBlock title="Plagas en disminución" tone="good" rows={pestRanking.disminuyendo} maxVal={pestRanking.maxVal} onSelect={(name) => setDetail({ kind: 'plaga', name })} />
       </div>
 
       {/* Trend chart */}
@@ -651,9 +653,20 @@ export default function MonthlyProjectionView() {
 
       {/* Client ranking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ClientBlock title="Clientes que empeoraron" tone="bad" rows={clientRanking.empeoraron} onClick={(name) => handleDrillDown('cliente', name)} />
-        <ClientBlock title="Clientes que mejoraron" tone="good" rows={clientRanking.mejoraron} onClick={(name) => handleDrillDown('cliente', name)} />
+        <ClientBlock title="Clientes que empeoraron" tone="bad" rows={clientRanking.empeoraron} onSelect={(name) => setDetail({ kind: 'cliente', name })} />
+        <ClientBlock title="Clientes que mejoraron" tone="good" rows={clientRanking.mejoraron} onSelect={(name) => setDetail({ kind: 'cliente', name })} />
       </div>
+
+      {/* Detail modal */}
+      {detail && (
+        <DetailModal
+          context={detail}
+          monthLabel={labelOf(currentMonth)}
+          records={currStats.records}
+          getPestName={getPestName}
+          onClose={() => setDetail(null)}
+        />
+      )}
     </div>
   );
 }
