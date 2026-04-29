@@ -809,7 +809,7 @@ function ClientBlock({ title, tone, rows, onSelect }: { title: string; tone: 'go
         ) : rows.map(r => (
           <button
             key={r.name}
-            onClick={() => onClick(r.name)}
+            onClick={() => onSelect(r.name)}
             className="w-full text-left px-3 py-2 border-b border-border/50 hover:bg-accent/40 transition text-sm flex justify-between items-center gap-2"
           >
             <span className="font-medium truncate flex-1">{r.name}</span>
