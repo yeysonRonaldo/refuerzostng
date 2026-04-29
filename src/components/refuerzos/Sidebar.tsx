@@ -5,7 +5,7 @@ import { parseExcelFile } from '@/lib/dataProcessor';
 import { uploadToFirestore, clearFirestoreData, deleteYearFromFirestore } from '@/lib/firestoreService';
 import {
   LayoutDashboard, Activity, Database, Upload, Loader2, Users, LogOut, Navigation, FileText,
-  FileSpreadsheet, X, ClipboardList, Trash2, AlertCircle, RefreshCw, CheckCircle2,
+  FileSpreadsheet, X, ClipboardList, Trash2, AlertCircle, RefreshCw, CheckCircle2, TrendingUp,
 } from 'lucide-react';
 import { TabName } from '@/types/refuerzos';
 import { toast } from 'sonner';
@@ -35,6 +35,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const navItems: { id: TabName; label: string; icon: React.ReactNode }[] = [
     { id: 'metrics', label: 'Métricas', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
     { id: 'analysis', label: 'Análisis de Cambios', icon: <Activity className="w-[18px] h-[18px]" /> },
+    { id: 'projection', label: 'Proyección Mensual', icon: <TrendingUp className="w-[18px] h-[18px]" /> },
     { id: 'routes', label: 'Rutas & Asignación', icon: <Navigation className="w-[18px] h-[18px]" /> },
     { id: 'reports', label: 'Generador Reportes PDF', icon: <FileText className="w-[18px] h-[18px]" /> },
     { id: 'techReports', label: 'Reportes por Técnico', icon: <ClipboardList className="w-[18px] h-[18px]" /> },

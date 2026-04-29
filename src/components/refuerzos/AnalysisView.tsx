@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { useAppContext } from '@/context/AppContext';
+import { buildCombinedPest } from '@/lib/pestUtils';
 
 const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const SHORT_MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -8,19 +9,8 @@ const SHORT_MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "S
 export default function AnalysisView() {
   const { processedData, getPestName } = useAppContext();
 
-  // Combina Plagas Internas + Externas en un único nombre legible
-  const getCombinedPest = (r: { plaga?: string; plagasExternas?: string }) => {
-    const clean = (v?: string) => {
-      if (!v) return '';
-      const n = getPestName(v).trim();
-      if (!n || n === '-' || n === '---') return '';
-      return n;
-    };
-    const a = clean(r.plaga);
-    const b = clean(r.plagasExternas);
-    const parts = Array.from(new Set([a, b].filter(Boolean)));
-    return parts.length ? parts.join(' / ') : '---';
-  };
+  const getCombinedPest = (r: { plaga?: string; plagasExternas?: string }) =>
+    buildCombinedPest(r, getPestName);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [analysisResult, setAnalysisResult] = useState<{
     newCases: { cliente: string; plaga: string; tecnico: string; gravedad: string; direccion: string }[];
