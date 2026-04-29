@@ -231,14 +231,14 @@ export default function MonthlyProjectionView() {
   }, [compareMonth, prevStats, monthOptions, buildStats]);
 
   const kpis: KpiCardData[] = [
-    { label: 'Total Refuerzos', current: currStats.total, previous: prevStats.total, direction: 'lowerIsBetter' },
-    { label: 'Casos Alto', current: currStats.high, previous: prevStats.high, direction: 'lowerIsBetter' },
-    { label: 'Casos Medio', current: currStats.mid, previous: prevStats.mid, direction: 'lowerIsBetter' },
-    { label: 'Casos Bajo', current: currStats.low, previous: prevStats.low, direction: 'lowerIsBetter' },
+    { label: 'Total Refuerzos', current: currStats.total, previous: prevStats.total, direction: 'lowerIsBetter', kpi: 'total' },
+    { label: 'Casos Alto', current: currStats.high, previous: prevStats.high, direction: 'lowerIsBetter', kpi: 'high' },
+    { label: 'Casos Medio', current: currStats.mid, previous: prevStats.mid, direction: 'lowerIsBetter', kpi: 'mid' },
+    { label: 'Casos Bajo', current: currStats.low, previous: prevStats.low, direction: 'lowerIsBetter', kpi: 'low' },
     { label: 'Clientes Únicos', current: currStats.uniqueClients, previous: prevStats.uniqueClients, direction: 'lowerIsBetter' },
-    { label: 'Casos Nuevos', current: movement.nuevos, previous: prevMovement.nuevos, direction: 'lowerIsBetter', hint: 'Cliente+Plaga sin antecedente el mes previo' },
-    { label: 'Casos Solventados', current: movement.solventados, previous: prevMovement.solventados, direction: 'higherIsBetter', hint: 'Estaban antes y ya no aparecen' },
-    { label: 'Casos Persistentes', current: movement.persistentes, previous: prevMovement.persistentes, direction: 'lowerIsBetter' },
+    { label: 'Casos Nuevos', current: movement.nuevos, previous: prevMovement.nuevos, direction: 'lowerIsBetter', hint: 'Cliente+Plaga sin antecedente el mes previo', kpi: 'nuevos' },
+    { label: 'Casos Solventados', current: movement.solventados, previous: prevMovement.solventados, direction: 'higherIsBetter', hint: 'Estaban antes y ya no aparecen', kpi: 'solventados' },
+    { label: 'Casos Persistentes', current: movement.persistentes, previous: prevMovement.persistentes, direction: 'lowerIsBetter', kpi: 'persistentes' },
     { label: 'Tasa Resolución', current: movement.tasaResolucion, previous: prevMovement.tasaResolucion, direction: 'higherIsBetter', format: fmtPct, hint: 'Solventados / (Persistentes + Solventados)' },
     { label: 'Promedio Días Activos', current: currStats.avgDiasActivos, previous: prevStats.avgDiasActivos, direction: 'lowerIsBetter', format: fmtFloat },
     { label: 'Índice de Severidad', current: currStats.severityIndex, previous: prevStats.severityIndex, direction: 'lowerIsBetter', format: fmtFloat, hint: '(Alto×3 + Medio×2 + Bajo×1) / total' },
