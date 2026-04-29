@@ -5,10 +5,12 @@ import { buildCombinedPest } from '@/lib/pestUtils';
 import { ArrowDown, ArrowUp, ArrowLeftRight, Minus, TrendingUp, TrendingDown, AlertTriangle, Sparkles, Download, X, User, Building2, Hash, MapPin, Bug, ShieldAlert } from 'lucide-react';
 import { RefuerzoRecord } from '@/types/refuerzos';
 
+type KpiKind = 'total' | 'high' | 'mid' | 'low' | 'nuevos' | 'solventados' | 'persistentes';
 type DetailContext =
   | { kind: 'tecnico'; name: string }
   | { kind: 'plaga'; name: string }
-  | { kind: 'cliente'; name: string };
+  | { kind: 'cliente'; name: string }
+  | { kind: 'kpi'; kpi: KpiKind; label: string };
 
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const SHORT_MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -22,6 +24,7 @@ interface KpiCardData {
   format?: (n: number) => string;
   direction: Direction;
   hint?: string;
+  kpi?: KpiKind;
 }
 
 const fmtInt = (n: number) => Math.round(n).toLocaleString('es-ES');
@@ -40,7 +43,7 @@ function deltaTone(delta: number, direction: Direction): 'good' | 'bad' | 'flat'
   return delta > 0 ? 'good' : 'bad';
 }
 
-function KpiCard({ data }: { data: KpiCardData }) {
+function KpiCard({ data, onClick }: { data: KpiCardData; onClick?: () => void }) {
   const delta = data.current - data.previous;
   const pct = pctChange(data.current, data.previous);
   const tone = deltaTone(delta, data.direction);
@@ -51,15 +54,22 @@ function KpiCard({ data }: { data: KpiCardData }) {
     : tone === 'bad' ? 'text-destructive bg-destructive/10 border-destructive/20'
     : 'text-muted-foreground bg-muted/40 border-border';
 
-  const Icon = tone === 'good' ? ArrowDown : tone === 'bad' ? ArrowUp : Minus;
-  // Flip arrow direction by semantics: if higherIsBetter and good → up arrow
   const ArrowIcon = (() => {
     if (delta === 0) return Minus;
     return delta > 0 ? ArrowUp : ArrowDown;
   })();
 
+  const clickable = !!onClick;
+
   return (
-    <div className="bg-card rounded-lg border border-border p-4 flex flex-col gap-2">
+    <div
+      onClick={onClick}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } } : undefined}
+      className={`bg-card rounded-lg border border-border p-4 flex flex-col gap-2 transition ${clickable ? 'cursor-pointer hover:border-primary/40 hover:shadow-sm hover:-translate-y-0.5' : ''}`}
+      title={clickable ? 'Ver detalle' : undefined}
+    >
       <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{data.label}</div>
       <div className="flex items-end justify-between gap-2">
         <div className="text-2xl font-bold text-foreground">{fmt(data.current)}</div>
@@ -221,14 +231,14 @@ export default function MonthlyProjectionView() {
   }, [compareMonth, prevStats, monthOptions, buildStats]);
 
   const kpis: KpiCardData[] = [
-    { label: 'Total Refuerzos', current: currStats.total, previous: prevStats.total, direction: 'lowerIsBetter' },
-    { label: 'Casos Alto', current: currStats.high, previous: prevStats.high, direction: 'lowerIsBetter' },
-    { label: 'Casos Medio', current: currStats.mid, previous: prevStats.mid, direction: 'lowerIsBetter' },
-    { label: 'Casos Bajo', current: currStats.low, previous: prevStats.low, direction: 'lowerIsBetter' },
+    { label: 'Total Refuerzos', current: currStats.total, previous: prevStats.total, direction: 'lowerIsBetter', kpi: 'total' },
+    { label: 'Casos Alto', current: currStats.high, previous: prevStats.high, direction: 'lowerIsBetter', kpi: 'high' },
+    { label: 'Casos Medio', current: currStats.mid, previous: prevStats.mid, direction: 'lowerIsBetter', kpi: 'mid' },
+    { label: 'Casos Bajo', current: currStats.low, previous: prevStats.low, direction: 'lowerIsBetter', kpi: 'low' },
     { label: 'Clientes Únicos', current: currStats.uniqueClients, previous: prevStats.uniqueClients, direction: 'lowerIsBetter' },
-    { label: 'Casos Nuevos', current: movement.nuevos, previous: prevMovement.nuevos, direction: 'lowerIsBetter', hint: 'Cliente+Plaga sin antecedente el mes previo' },
-    { label: 'Casos Solventados', current: movement.solventados, previous: prevMovement.solventados, direction: 'higherIsBetter', hint: 'Estaban antes y ya no aparecen' },
-    { label: 'Casos Persistentes', current: movement.persistentes, previous: prevMovement.persistentes, direction: 'lowerIsBetter' },
+    { label: 'Casos Nuevos', current: movement.nuevos, previous: prevMovement.nuevos, direction: 'lowerIsBetter', hint: 'Cliente+Plaga sin antecedente el mes previo', kpi: 'nuevos' },
+    { label: 'Casos Solventados', current: movement.solventados, previous: prevMovement.solventados, direction: 'higherIsBetter', hint: 'Estaban antes y ya no aparecen', kpi: 'solventados' },
+    { label: 'Casos Persistentes', current: movement.persistentes, previous: prevMovement.persistentes, direction: 'lowerIsBetter', kpi: 'persistentes' },
     { label: 'Tasa Resolución', current: movement.tasaResolucion, previous: prevMovement.tasaResolucion, direction: 'higherIsBetter', format: fmtPct, hint: 'Solventados / (Persistentes + Solventados)' },
     { label: 'Promedio Días Activos', current: currStats.avgDiasActivos, previous: prevStats.avgDiasActivos, direction: 'lowerIsBetter', format: fmtFloat },
     { label: 'Índice de Severidad', current: currStats.severityIndex, previous: prevStats.severityIndex, direction: 'lowerIsBetter', format: fmtFloat, hint: '(Alto×3 + Medio×2 + Bajo×1) / total' },
@@ -613,7 +623,13 @@ export default function MonthlyProjectionView() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {kpis.map(k => <KpiCard key={k.label} data={k} />)}
+        {kpis.map(k => (
+          <KpiCard
+            key={k.label}
+            data={k}
+            onClick={k.kpi ? () => setDetail({ kind: 'kpi', kpi: k.kpi!, label: k.label }) : undefined}
+          />
+        ))}
       </div>
 
       {/* Tech ranking */}
@@ -663,6 +679,8 @@ export default function MonthlyProjectionView() {
           context={detail}
           monthLabel={labelOf(currentMonth)}
           records={currStats.records}
+          prevRecords={prevStats.records}
+          prevPestKeys={prevStats.pestKeys}
           getPestName={getPestName}
           onClose={() => setDetail(null)}
         />
@@ -836,27 +854,57 @@ function DetailModal({
   context,
   monthLabel,
   records,
+  prevRecords,
+  prevPestKeys,
   getPestName,
   onClose,
 }: {
   context: DetailContext;
   monthLabel: string;
   records: RefuerzoRecord[];
+  prevRecords: RefuerzoRecord[];
+  prevPestKeys: Set<string>;
   getPestName: (raw: string) => string;
   onClose: () => void;
 }) {
   // Filter records of the current month by selected entity
   const filtered = useMemo(() => {
+    if (context.kind === 'kpi') {
+      if (context.kpi === 'total') return records;
+      if (context.kpi === 'high') return records.filter(r => r.gravedad === 'Alto');
+      if (context.kpi === 'mid') return records.filter(r => r.gravedad === 'Medio');
+      if (context.kpi === 'low') return records.filter(r => r.gravedad === 'Bajo');
+      if (context.kpi === 'nuevos') {
+        return records.filter(r => {
+          const k = `${r.cliente}|${buildCombinedPest(r, getPestName)}`;
+          return !prevPestKeys.has(k);
+        });
+      }
+      if (context.kpi === 'persistentes') {
+        return records.filter(r => {
+          const k = `${r.cliente}|${buildCombinedPest(r, getPestName)}`;
+          return prevPestKeys.has(k);
+        });
+      }
+      if (context.kpi === 'solventados') {
+        // Records from previous month not present anymore
+        const currKeys = new Set(records.map(r => `${r.cliente}|${buildCombinedPest(r, getPestName)}`));
+        return prevRecords.filter(r => {
+          const k = `${r.cliente}|${buildCombinedPest(r, getPestName)}`;
+          return !currKeys.has(k);
+        });
+      }
+      return records;
+    }
     return records.filter(r => {
       if (context.kind === 'tecnico') return r.tecnico === context.name;
       if (context.kind === 'cliente') return r.cliente === context.name;
       // plaga: matches if combined contains the selected pest name
       const combined = buildCombinedPest(r, getPestName);
       if (combined === context.name) return true;
-      // plaga can be combined "A / B"; check parts
       return combined.split(' / ').includes(context.name);
     });
-  }, [records, context, getPestName]);
+  }, [records, prevRecords, prevPestKeys, context, getPestName]);
 
   // Order: severity Alto > Medio > Bajo, then date desc
   const ordered = useMemo(() => {
@@ -879,8 +927,13 @@ function DetailModal({
 
   const kindLabel = context.kind === 'tecnico' ? 'Técnico'
     : context.kind === 'cliente' ? 'Cliente'
-    : 'Plaga';
-  const KindIcon = context.kind === 'tecnico' ? User : context.kind === 'cliente' ? Building2 : Bug;
+    : context.kind === 'plaga' ? 'Plaga'
+    : 'KPI';
+  const titleText = context.kind === 'kpi' ? context.label : context.name;
+  const KindIcon = context.kind === 'tecnico' ? User
+    : context.kind === 'cliente' ? Building2
+    : context.kind === 'plaga' ? Bug
+    : ShieldAlert;
 
   return (
     <div
@@ -899,7 +952,7 @@ function DetailModal({
             </div>
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{kindLabel} · {monthLabel}</div>
-              <div className="text-base sm:text-lg font-bold text-foreground truncate">{context.name}</div>
+              <div className="text-base sm:text-lg font-bold text-foreground truncate">{titleText}</div>
               <div className="flex flex-wrap gap-1.5 mt-1.5 text-[11px]">
                 <span className="px-2 py-0.5 rounded-full bg-muted font-semibold">Total: {filtered.length}</span>
                 {counts.Alto > 0 && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">Alto: {counts.Alto}</span>}
