@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 
 const MetricsView = lazy(() => import('@/components/refuerzos/MetricsView'));
 const AnalysisView = lazy(() => import('@/components/refuerzos/AnalysisView'));
+const MonthlyProjectionView = lazy(() => import('@/components/refuerzos/MonthlyProjectionView'));
 const DatabaseView = lazy(() => import('@/components/refuerzos/DatabaseView'));
 const UserManagement = lazy(() => import('@/components/refuerzos/UserManagement'));
 const RoutesView = lazy(() => import('@/components/refuerzos/RoutesView'));
@@ -32,6 +33,7 @@ export default function Index() {
           <Suspense fallback={<TabFallback />}>
             {activeTab === 'metrics' && <MetricsView />}
             {activeTab === 'analysis' && <AnalysisView />}
+            {activeTab === 'projection' && <MonthlyProjectionView />}
             {activeTab === 'routes' && <RoutesView />}
             {activeTab === 'reports' && <ReportsView />}
             {activeTab === 'techReports' && <TechReportsView />}
