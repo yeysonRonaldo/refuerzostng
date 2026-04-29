@@ -738,7 +738,7 @@ function TechBlock({ title, tone, rows, onSelect }: { title: string; tone: 'good
 
 interface PestRow { name: string; current: number; previous: number; delta: number; pct: number | null; }
 
-function PestBlock({ title, tone, rows, maxVal }: { title: string; tone: 'good' | 'bad'; rows: PestRow[]; maxVal: number }) {
+function PestBlock({ title, tone, rows, maxVal, onSelect }: { title: string; tone: 'good' | 'bad'; rows: PestRow[]; maxVal: number; onSelect: (name: string) => void }) {
   const accent = tone === 'good' ? 'border-l-success' : 'border-l-destructive';
   const badge = tone === 'good' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive';
   const Icon = tone === 'good' ? TrendingDown : TrendingUp;
