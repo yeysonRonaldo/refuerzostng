@@ -678,7 +678,7 @@ interface TechRow {
   currHigh: number; prevHigh: number; flag: 'nuevo' | 'sin-casos' | null;
 }
 
-function TechBlock({ title, tone, rows }: { title: string; tone: 'good' | 'bad'; rows: TechRow[] }) {
+function TechBlock({ title, tone, rows, onSelect }: { title: string; tone: 'good' | 'bad'; rows: TechRow[]; onSelect: (name: string) => void }) {
   const accent = tone === 'good' ? 'border-l-success' : 'border-l-destructive';
   const badge = tone === 'good' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive';
   return (
@@ -704,7 +704,12 @@ function TechBlock({ title, tone, rows }: { title: string; tone: 'good' | 'bad';
             </thead>
             <tbody>
               {rows.map(r => (
-                <tr key={r.name} className="border-t border-border/50 hover:bg-accent/30">
+                <tr
+                  key={r.name}
+                  onClick={() => onSelect(r.name)}
+                  className="border-t border-border/50 hover:bg-accent/40 cursor-pointer transition"
+                  title="Ver detalle"
+                >
                   <td className="p-2 font-medium">
                     {r.name}
                     {r.flag === 'nuevo' && <span className="ml-2 text-[10px] uppercase font-bold text-primary">Nuevo</span>}
