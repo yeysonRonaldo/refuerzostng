@@ -2,8 +2,13 @@ import { useState, useMemo, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useAppContext } from '@/context/AppContext';
 import { buildCombinedPest } from '@/lib/pestUtils';
-import { ArrowDown, ArrowUp, ArrowLeftRight, Minus, TrendingUp, TrendingDown, AlertTriangle, Sparkles, Download } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowLeftRight, Minus, TrendingUp, TrendingDown, AlertTriangle, Sparkles, Download, X, User, Building2, Hash, MapPin, Bug, ShieldAlert } from 'lucide-react';
 import { RefuerzoRecord } from '@/types/refuerzos';
+
+type DetailContext =
+  | { kind: 'tecnico'; name: string }
+  | { kind: 'plaga'; name: string }
+  | { kind: 'cliente'; name: string };
 
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const SHORT_MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
