@@ -132,17 +132,26 @@ export default function MonthlyProjectionView() {
     [processedData, techFilter],
   );
 
-  const buildStats = (key: string): PeriodStats => {
+  // Pre-index records by month key — single pass over all data, reused everywhere.
+  const recordsByMonth = useMemo(() => {
+    const idx = new Map<string, RefuerzoRecord[]>();
+    techScoped.forEach(r => {
+      if (!r.dateObj) return;
+      const key = `${r.dateObj.getUTCFullYear()}-${String(r.dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
+      const arr = idx.get(key);
+      if (arr) arr.push(r); else idx.set(key, [r]);
+    });
+    return idx;
+  }, [techScoped]);
+
+  const buildStats = useMemo(() => (key: string): PeriodStats => {
     if (!key) return emptyStats();
-    const [yStr, mStr] = key.split('-');
-    const y = parseInt(yStr, 10);
-    const m = parseInt(mStr, 10) - 1;
+    const recs = recordsByMonth.get(key);
+    if (!recs || recs.length === 0) return emptyStats();
     const stats = emptyStats();
     const clients = new Set<string>();
     let diasSum = 0, diasCount = 0;
-    techScoped.forEach(r => {
-      if (!r.dateObj) return;
-      if (r.dateObj.getUTCFullYear() !== y || r.dateObj.getUTCMonth() !== m) return;
+    recs.forEach(r => {
       stats.records.push(r);
       stats.total++;
       if (r.gravedad === 'Alto') stats.high++;
@@ -152,7 +161,7 @@ export default function MonthlyProjectionView() {
       if (typeof r.diasActivos === 'number' && !isNaN(r.diasActivos)) {
         diasSum += r.diasActivos; diasCount++;
       }
-      const pest = getCombinedPest(r);
+      const pest = buildCombinedPest(r, getPestName);
       stats.pestKeys.add(`${r.cliente}|${pest}`);
       if (pest && pest !== '---') {
         stats.byPest.set(pest, (stats.byPest.get(pest) ?? 0) + 1);
@@ -173,10 +182,10 @@ export default function MonthlyProjectionView() {
       ? (stats.high * 3 + stats.mid * 2 + stats.low * 1) / stats.total
       : 0;
     return stats;
-  };
+  }, [recordsByMonth, getPestName]);
 
-  const currStats = useMemo(() => buildStats(currentMonth), [currentMonth, techScoped, isGrouped]);
-  const prevStats = useMemo(() => buildStats(compareMonth), [compareMonth, techScoped, isGrouped]);
+  const currStats = useMemo(() => buildStats(currentMonth), [buildStats, currentMonth]);
+  const prevStats = useMemo(() => buildStats(compareMonth), [buildStats, compareMonth]);
 
   // Cases new / solved / persistent
   const movement = useMemo(() => {
@@ -191,7 +200,6 @@ export default function MonthlyProjectionView() {
   }, [currStats, prevStats]);
 
   const prevMovement = useMemo(() => {
-    // For showing comparison of "new/solved" vs the previous-to-compare period (one step further back)
     if (!compareMonth) return { nuevos: 0, solventados: 0, persistentes: 0, tasaResolucion: 0 };
     const idx = monthOptions.indexOf(compareMonth);
     const earlierKey = monthOptions[idx + 1];
@@ -204,7 +212,7 @@ export default function MonthlyProjectionView() {
     earlier.pestKeys.forEach(k => { if (!prevStats.pestKeys.has(k)) solventados++; });
     const denom = persistentes + solventados;
     return { nuevos, solventados, persistentes, tasaResolucion: denom > 0 ? (solventados / denom) * 100 : 0 };
-  }, [compareMonth, prevStats, monthOptions, techScoped]);
+  }, [compareMonth, prevStats, monthOptions, buildStats]);
 
   const kpis: KpiCardData[] = [
     { label: 'Total Refuerzos', current: currStats.total, previous: prevStats.total, direction: 'lowerIsBetter' },
@@ -303,7 +311,7 @@ export default function MonthlyProjectionView() {
         low: s.low,
       };
     });
-  }, [currentMonth, monthOptions, techScoped, isGrouped]);
+  }, [currentMonth, monthOptions, buildStats]);
 
   // Insights
   const insights = useMemo(() => {
