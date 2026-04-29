@@ -2,8 +2,13 @@ import { useState, useMemo, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useAppContext } from '@/context/AppContext';
 import { buildCombinedPest } from '@/lib/pestUtils';
-import { ArrowDown, ArrowUp, ArrowLeftRight, Minus, TrendingUp, TrendingDown, AlertTriangle, Sparkles, Download } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowLeftRight, Minus, TrendingUp, TrendingDown, AlertTriangle, Sparkles, Download, X, User, Building2, Hash, MapPin, Bug, ShieldAlert } from 'lucide-react';
 import { RefuerzoRecord } from '@/types/refuerzos';
+
+type DetailContext =
+  | { kind: 'tecnico'; name: string }
+  | { kind: 'plaga'; name: string }
+  | { kind: 'cliente'; name: string };
 
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const SHORT_MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -99,6 +104,7 @@ function emptyStats(): PeriodStats {
 export default function MonthlyProjectionView() {
   const { processedData, getPestName, yearFilter, techFilter, isGrouped, handleDrillDown } = useAppContext();
   const getCombinedPest = (r: RefuerzoRecord) => buildCombinedPest(r, getPestName);
+  const [detail, setDetail] = useState<DetailContext | null>(null);
 
   // Available months (respecting year filter)
   const monthOptions = useMemo(() => {
@@ -617,19 +623,21 @@ export default function MonthlyProjectionView() {
             title="Técnicos que mejoraron"
             tone="good"
             rows={techRanking.mejoraron}
+            onSelect={(name) => setDetail({ kind: 'tecnico', name })}
           />
           <TechBlock
             title="Técnicos que empeoraron"
             tone="bad"
             rows={techRanking.empeoraron}
+            onSelect={(name) => setDetail({ kind: 'tecnico', name })}
           />
         </div>
       )}
 
       {/* Pest ranking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <PestBlock title="Plagas en crecimiento" tone="bad" rows={pestRanking.creciendo} maxVal={pestRanking.maxVal} />
-        <PestBlock title="Plagas en disminución" tone="good" rows={pestRanking.disminuyendo} maxVal={pestRanking.maxVal} />
+        <PestBlock title="Plagas en crecimiento" tone="bad" rows={pestRanking.creciendo} maxVal={pestRanking.maxVal} onSelect={(name) => setDetail({ kind: 'plaga', name })} />
+        <PestBlock title="Plagas en disminución" tone="good" rows={pestRanking.disminuyendo} maxVal={pestRanking.maxVal} onSelect={(name) => setDetail({ kind: 'plaga', name })} />
       </div>
 
       {/* Trend chart */}
@@ -645,9 +653,20 @@ export default function MonthlyProjectionView() {
 
       {/* Client ranking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ClientBlock title="Clientes que empeoraron" tone="bad" rows={clientRanking.empeoraron} onClick={(name) => handleDrillDown('cliente', name)} />
-        <ClientBlock title="Clientes que mejoraron" tone="good" rows={clientRanking.mejoraron} onClick={(name) => handleDrillDown('cliente', name)} />
+        <ClientBlock title="Clientes que empeoraron" tone="bad" rows={clientRanking.empeoraron} onSelect={(name) => setDetail({ kind: 'cliente', name })} />
+        <ClientBlock title="Clientes que mejoraron" tone="good" rows={clientRanking.mejoraron} onSelect={(name) => setDetail({ kind: 'cliente', name })} />
       </div>
+
+      {/* Detail modal */}
+      {detail && (
+        <DetailModal
+          context={detail}
+          monthLabel={labelOf(currentMonth)}
+          records={currStats.records}
+          getPestName={getPestName}
+          onClose={() => setDetail(null)}
+        />
+      )}
     </div>
   );
 }
@@ -659,7 +678,7 @@ interface TechRow {
   currHigh: number; prevHigh: number; flag: 'nuevo' | 'sin-casos' | null;
 }
 
-function TechBlock({ title, tone, rows }: { title: string; tone: 'good' | 'bad'; rows: TechRow[] }) {
+function TechBlock({ title, tone, rows, onSelect }: { title: string; tone: 'good' | 'bad'; rows: TechRow[]; onSelect: (name: string) => void }) {
   const accent = tone === 'good' ? 'border-l-success' : 'border-l-destructive';
   const badge = tone === 'good' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive';
   return (
@@ -685,7 +704,12 @@ function TechBlock({ title, tone, rows }: { title: string; tone: 'good' | 'bad';
             </thead>
             <tbody>
               {rows.map(r => (
-                <tr key={r.name} className="border-t border-border/50 hover:bg-accent/30">
+                <tr
+                  key={r.name}
+                  onClick={() => onSelect(r.name)}
+                  className="border-t border-border/50 hover:bg-accent/40 cursor-pointer transition"
+                  title="Ver detalle"
+                >
                   <td className="p-2 font-medium">
                     {r.name}
                     {r.flag === 'nuevo' && <span className="ml-2 text-[10px] uppercase font-bold text-primary">Nuevo</span>}
@@ -714,7 +738,7 @@ function TechBlock({ title, tone, rows }: { title: string; tone: 'good' | 'bad';
 
 interface PestRow { name: string; current: number; previous: number; delta: number; pct: number | null; }
 
-function PestBlock({ title, tone, rows, maxVal }: { title: string; tone: 'good' | 'bad'; rows: PestRow[]; maxVal: number }) {
+function PestBlock({ title, tone, rows, maxVal, onSelect }: { title: string; tone: 'good' | 'bad'; rows: PestRow[]; maxVal: number; onSelect: (name: string) => void }) {
   const accent = tone === 'good' ? 'border-l-success' : 'border-l-destructive';
   const badge = tone === 'good' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive';
   const Icon = tone === 'good' ? TrendingDown : TrendingUp;
@@ -731,7 +755,13 @@ function PestBlock({ title, tone, rows, maxVal }: { title: string; tone: 'good' 
           const prevW = (r.previous / maxVal) * 100;
           const currW = (r.current / maxVal) * 100;
           return (
-            <div key={r.name} className="text-xs">
+            <button
+              type="button"
+              key={r.name}
+              onClick={() => onSelect(r.name)}
+              className="text-xs w-full text-left rounded-md p-1.5 hover:bg-accent/40 transition cursor-pointer"
+              title="Ver detalle"
+            >
               <div className="flex justify-between mb-1">
                 <span className="font-semibold text-foreground truncate pr-2">{r.name}</span>
                 <span className={`font-bold ${tone === 'good' ? 'text-success' : 'text-destructive'}`}>
@@ -754,7 +784,7 @@ function PestBlock({ title, tone, rows, maxVal }: { title: string; tone: 'good' 
                   <span className="w-8 text-right tabular-nums font-semibold">{r.current}</span>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -764,7 +794,7 @@ function PestBlock({ title, tone, rows, maxVal }: { title: string; tone: 'good' 
 
 interface ClientRow { name: string; current: number; previous: number; delta: number; pct: number | null; }
 
-function ClientBlock({ title, tone, rows, onClick }: { title: string; tone: 'good' | 'bad'; rows: ClientRow[]; onClick: (name: string) => void }) {
+function ClientBlock({ title, tone, rows, onSelect }: { title: string; tone: 'good' | 'bad'; rows: ClientRow[]; onSelect: (name: string) => void }) {
   const accent = tone === 'good' ? 'border-l-success' : 'border-l-destructive';
   const badge = tone === 'good' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive';
   return (
@@ -779,7 +809,7 @@ function ClientBlock({ title, tone, rows, onClick }: { title: string; tone: 'goo
         ) : rows.map(r => (
           <button
             key={r.name}
-            onClick={() => onClick(r.name)}
+            onClick={() => onSelect(r.name)}
             className="w-full text-left px-3 py-2 border-b border-border/50 hover:bg-accent/40 transition text-sm flex justify-between items-center gap-2"
           >
             <span className="font-medium truncate flex-1">{r.name}</span>
@@ -789,6 +819,145 @@ function ClientBlock({ title, tone, rows, onClick }: { title: string; tone: 'goo
             </span>
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Detail Modal ----------
+
+function severityClasses(g: string) {
+  if (g === 'Alto') return 'bg-destructive/10 text-destructive border-destructive/30';
+  if (g === 'Medio') return 'bg-warning/10 text-warning border-warning/30';
+  return 'bg-success/10 text-success border-success/30';
+}
+
+function DetailModal({
+  context,
+  monthLabel,
+  records,
+  getPestName,
+  onClose,
+}: {
+  context: DetailContext;
+  monthLabel: string;
+  records: RefuerzoRecord[];
+  getPestName: (raw: string) => string;
+  onClose: () => void;
+}) {
+  // Filter records of the current month by selected entity
+  const filtered = useMemo(() => {
+    return records.filter(r => {
+      if (context.kind === 'tecnico') return r.tecnico === context.name;
+      if (context.kind === 'cliente') return r.cliente === context.name;
+      // plaga: matches if combined contains the selected pest name
+      const combined = buildCombinedPest(r, getPestName);
+      if (combined === context.name) return true;
+      // plaga can be combined "A / B"; check parts
+      return combined.split(' / ').includes(context.name);
+    });
+  }, [records, context, getPestName]);
+
+  // Order: severity Alto > Medio > Bajo, then date desc
+  const ordered = useMemo(() => {
+    const sevRank: Record<string, number> = { Alto: 0, Medio: 1, Bajo: 2 };
+    return [...filtered].sort((a, b) => {
+      const sa = sevRank[a.gravedad] ?? 3;
+      const sb = sevRank[b.gravedad] ?? 3;
+      if (sa !== sb) return sa - sb;
+      const ta = a.dateObj?.getTime() ?? 0;
+      const tb = b.dateObj?.getTime() ?? 0;
+      return tb - ta;
+    });
+  }, [filtered]);
+
+  const counts = useMemo(() => {
+    const c = { Alto: 0, Medio: 0, Bajo: 0 };
+    filtered.forEach(r => { c[r.gravedad] = (c[r.gravedad] ?? 0) + 1; });
+    return c;
+  }, [filtered]);
+
+  const kindLabel = context.kind === 'tecnico' ? 'Técnico'
+    : context.kind === 'cliente' ? 'Cliente'
+    : 'Plaga';
+  const KindIcon = context.kind === 'tecnico' ? User : context.kind === 'cliente' ? Building2 : Bug;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-4 border-b border-border flex items-start justify-between gap-3 bg-gradient-to-br from-primary/5 to-transparent">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <KindIcon className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{kindLabel} · {monthLabel}</div>
+              <div className="text-base sm:text-lg font-bold text-foreground truncate">{context.name}</div>
+              <div className="flex flex-wrap gap-1.5 mt-1.5 text-[11px]">
+                <span className="px-2 py-0.5 rounded-full bg-muted font-semibold">Total: {filtered.length}</span>
+                {counts.Alto > 0 && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">Alto: {counts.Alto}</span>}
+                {counts.Medio > 0 && <span className="px-2 py-0.5 rounded-full bg-warning/10 text-warning font-semibold">Medio: {counts.Medio}</span>}
+                {counts.Bajo > 0 && <span className="px-2 py-0.5 rounded-full bg-success/10 text-success font-semibold">Bajo: {counts.Bajo}</span>}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition shrink-0"
+            aria-label="Cerrar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto p-4 space-y-3 flex-1">
+          {ordered.length === 0 ? (
+            <p className="text-center text-muted-foreground py-12 text-sm">Sin registros para mostrar.</p>
+          ) : ordered.map((r, i) => {
+            const pest = buildCombinedPest(r, getPestName);
+            return (
+              <div key={r.id ?? i} className="border border-border rounded-lg p-3 bg-background/50 hover:border-primary/40 transition">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="text-[10px] text-muted-foreground font-mono">{r.displayDate || '—'}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${severityClasses(r.gravedad)}`}>
+                    <ShieldAlert className="w-3 h-3 inline -mt-0.5 mr-0.5" />{r.gravedad}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                  <DetailRow icon={User} label="Técnico" value={r.tecnico} />
+                  <DetailRow icon={Building2} label="Cliente" value={r.cliente} />
+                  <DetailRow icon={Hash} label="Código cliente" value={r.codigoCliente || r.idCliente || '—'} mono />
+                  <DetailRow icon={Bug} label="Plaga" value={pest} />
+                  <DetailRow icon={MapPin} label="Dirección" value={r.direccion || '—'} className="sm:col-span-2" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({
+  icon: Icon, label, value, mono, className,
+}: {
+  icon: typeof User; label: string; value: string; mono?: boolean; className?: string;
+}) {
+  return (
+    <div className={`flex items-start gap-2 ${className ?? ''}`}>
+      <Icon className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+      <div className="min-w-0">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">{label}</div>
+        <div className={`text-foreground break-words ${mono ? 'font-mono' : 'font-medium'}`}>{value || '—'}</div>
       </div>
     </div>
   );
