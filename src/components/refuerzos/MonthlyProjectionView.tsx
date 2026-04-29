@@ -24,6 +24,7 @@ interface KpiCardData {
   format?: (n: number) => string;
   direction: Direction;
   hint?: string;
+  kpi?: KpiKind;
 }
 
 const fmtInt = (n: number) => Math.round(n).toLocaleString('es-ES');
