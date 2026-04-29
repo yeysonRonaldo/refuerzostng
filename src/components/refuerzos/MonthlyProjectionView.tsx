@@ -936,7 +936,7 @@ function DetailModal({
             </div>
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{kindLabel} · {monthLabel}</div>
-              <div className="text-base sm:text-lg font-bold text-foreground truncate">{context.name}</div>
+              <div className="text-base sm:text-lg font-bold text-foreground truncate">{titleText}</div>
               <div className="flex flex-wrap gap-1.5 mt-1.5 text-[11px]">
                 <span className="px-2 py-0.5 rounded-full bg-muted font-semibold">Total: {filtered.length}</span>
                 {counts.Alto > 0 && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">Alto: {counts.Alto}</span>}
