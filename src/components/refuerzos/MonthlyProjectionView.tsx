@@ -794,7 +794,7 @@ function PestBlock({ title, tone, rows, maxVal, onSelect }: { title: string; ton
 
 interface ClientRow { name: string; current: number; previous: number; delta: number; pct: number | null; }
 
-function ClientBlock({ title, tone, rows, onClick }: { title: string; tone: 'good' | 'bad'; rows: ClientRow[]; onClick: (name: string) => void }) {
+function ClientBlock({ title, tone, rows, onSelect }: { title: string; tone: 'good' | 'bad'; rows: ClientRow[]; onSelect: (name: string) => void }) {
   const accent = tone === 'good' ? 'border-l-success' : 'border-l-destructive';
   const badge = tone === 'good' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive';
   return (
