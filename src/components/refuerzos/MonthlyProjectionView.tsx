@@ -823,3 +823,142 @@ function ClientBlock({ title, tone, rows, onSelect }: { title: string; tone: 'go
     </div>
   );
 }
+
+// ---------- Detail Modal ----------
+
+function severityClasses(g: string) {
+  if (g === 'Alto') return 'bg-destructive/10 text-destructive border-destructive/30';
+  if (g === 'Medio') return 'bg-warning/10 text-warning border-warning/30';
+  return 'bg-success/10 text-success border-success/30';
+}
+
+function DetailModal({
+  context,
+  monthLabel,
+  records,
+  getPestName,
+  onClose,
+}: {
+  context: DetailContext;
+  monthLabel: string;
+  records: RefuerzoRecord[];
+  getPestName: (raw: string) => string;
+  onClose: () => void;
+}) {
+  // Filter records of the current month by selected entity
+  const filtered = useMemo(() => {
+    return records.filter(r => {
+      if (context.kind === 'tecnico') return r.tecnico === context.name;
+      if (context.kind === 'cliente') return r.cliente === context.name;
+      // plaga: matches if combined contains the selected pest name
+      const combined = buildCombinedPest(r, getPestName);
+      if (combined === context.name) return true;
+      // plaga can be combined "A / B"; check parts
+      return combined.split(' / ').includes(context.name);
+    });
+  }, [records, context, getPestName]);
+
+  // Order: severity Alto > Medio > Bajo, then date desc
+  const ordered = useMemo(() => {
+    const sevRank: Record<string, number> = { Alto: 0, Medio: 1, Bajo: 2 };
+    return [...filtered].sort((a, b) => {
+      const sa = sevRank[a.gravedad] ?? 3;
+      const sb = sevRank[b.gravedad] ?? 3;
+      if (sa !== sb) return sa - sb;
+      const ta = a.dateObj?.getTime() ?? 0;
+      const tb = b.dateObj?.getTime() ?? 0;
+      return tb - ta;
+    });
+  }, [filtered]);
+
+  const counts = useMemo(() => {
+    const c = { Alto: 0, Medio: 0, Bajo: 0 };
+    filtered.forEach(r => { c[r.gravedad] = (c[r.gravedad] ?? 0) + 1; });
+    return c;
+  }, [filtered]);
+
+  const kindLabel = context.kind === 'tecnico' ? 'Técnico'
+    : context.kind === 'cliente' ? 'Cliente'
+    : 'Plaga';
+  const KindIcon = context.kind === 'tecnico' ? User : context.kind === 'cliente' ? Building2 : Bug;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-4 border-b border-border flex items-start justify-between gap-3 bg-gradient-to-br from-primary/5 to-transparent">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <KindIcon className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{kindLabel} · {monthLabel}</div>
+              <div className="text-base sm:text-lg font-bold text-foreground truncate">{context.name}</div>
+              <div className="flex flex-wrap gap-1.5 mt-1.5 text-[11px]">
+                <span className="px-2 py-0.5 rounded-full bg-muted font-semibold">Total: {filtered.length}</span>
+                {counts.Alto > 0 && <span className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">Alto: {counts.Alto}</span>}
+                {counts.Medio > 0 && <span className="px-2 py-0.5 rounded-full bg-warning/10 text-warning font-semibold">Medio: {counts.Medio}</span>}
+                {counts.Bajo > 0 && <span className="px-2 py-0.5 rounded-full bg-success/10 text-success font-semibold">Bajo: {counts.Bajo}</span>}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition shrink-0"
+            aria-label="Cerrar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto p-4 space-y-3 flex-1">
+          {ordered.length === 0 ? (
+            <p className="text-center text-muted-foreground py-12 text-sm">Sin registros para mostrar.</p>
+          ) : ordered.map((r, i) => {
+            const pest = buildCombinedPest(r, getPestName);
+            return (
+              <div key={r.id ?? i} className="border border-border rounded-lg p-3 bg-background/50 hover:border-primary/40 transition">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="text-[10px] text-muted-foreground font-mono">{r.displayDate || '—'}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${severityClasses(r.gravedad)}`}>
+                    <ShieldAlert className="w-3 h-3 inline -mt-0.5 mr-0.5" />{r.gravedad}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                  <DetailRow icon={User} label="Técnico" value={r.tecnico} />
+                  <DetailRow icon={Building2} label="Cliente" value={r.cliente} />
+                  <DetailRow icon={Hash} label="Código cliente" value={r.codigoCliente || r.idCliente || '—'} mono />
+                  <DetailRow icon={Bug} label="Plaga" value={pest} />
+                  <DetailRow icon={MapPin} label="Dirección" value={r.direccion || '—'} className="sm:col-span-2" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({
+  icon: Icon, label, value, mono, className,
+}: {
+  icon: typeof User; label: string; value: string; mono?: boolean; className?: string;
+}) {
+  return (
+    <div className={`flex items-start gap-2 ${className ?? ''}`}>
+      <Icon className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+      <div className="min-w-0">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">{label}</div>
+        <div className={`text-foreground break-words ${mono ? 'font-mono' : 'font-medium'}`}>{value || '—'}</div>
+      </div>
+    </div>
+  );
+}
