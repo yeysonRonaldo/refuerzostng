@@ -311,7 +311,7 @@ export default function MonthlyProjectionView() {
         low: s.low,
       };
     });
-  }, [currentMonth, monthOptions, techScoped, isGrouped]);
+  }, [currentMonth, monthOptions, buildStats]);
 
   // Insights
   const insights = useMemo(() => {
