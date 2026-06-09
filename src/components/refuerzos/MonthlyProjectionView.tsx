@@ -329,6 +329,39 @@ export default function MonthlyProjectionView() {
     });
   }, [currentMonth, monthOptions, buildStats]);
 
+  // ----- Flow table (pendientes / entraron / cerraron) for every month -----
+  const flowTable = useMemo(() => {
+    const sortedKeys = [...monthOptions].sort(); // ascending chronological
+    const keysPerMonth = sortedKeys.map(k => {
+      const recs = recordsByMonth.get(k) ?? [];
+      const set = new Set<string>();
+      recs.forEach(r => {
+        if (!r.cliente) return;
+        const p = buildCombinedPest(r, getPestName);
+        if (p === '---') return;
+        set.add(`${r.cliente}|${p}`);
+      });
+      return { key: k, set };
+    });
+    return keysPerMonth.map((entry, i) => {
+      const prev = i > 0 ? keysPerMonth[i - 1].set : new Set<string>();
+      const curr = entry.set;
+      let entraron = 0, persistentes = 0;
+      curr.forEach(k => { if (prev.has(k)) persistentes++; else entraron++; });
+      let cerraron = 0;
+      prev.forEach(k => { if (!curr.has(k)) cerraron++; });
+      const entramos = prev.size;
+      const suma = entramos + entraron;
+      const pendiente = curr.size; // = persistentes + entraron = suma - cerraron
+      const [y, m] = entry.key.split('-');
+      return {
+        key: entry.key,
+        label: `${MONTH_NAMES[parseInt(m) - 1]} ${y}`,
+        entramos, entraron, suma, cerraron, pendiente, persistentes,
+      };
+    });
+  }, [monthOptions, recordsByMonth, getPestName]);
+
   // Insights
   const insights = useMemo(() => {
     const out: { tone: 'good' | 'bad' | 'info'; text: string }[] = [];
@@ -630,6 +663,50 @@ export default function MonthlyProjectionView() {
             onClick={k.kpi ? () => setDetail({ kind: 'kpi', kpi: k.kpi!, label: k.label }) : undefined}
           />
         ))}
+      </div>
+
+      {/* Flujo mensual de casos (cliente+plaga) */}
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <ArrowLeftRight className="w-4 h-4 text-primary" /> Flujo de Casos por Mes
+          </h3>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Casos únicos (cliente + plaga). El <strong>Pendiente</strong> de un mes pasa como <strong>Entramos con</strong> al siguiente.
+          </p>
+        </div>
+        <div className="max-h-[480px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-accent/50 sticky top-0 z-10">
+              <tr className="text-left">
+                <th className="p-2.5 font-semibold text-muted-foreground">Mes</th>
+                <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Casos pendientes que venían del mes anterior">Entramos con</th>
+                <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Casos nuevos que aparecieron este mes">Entraron</th>
+                <th className="p-2.5 font-semibold text-muted-foreground text-right">Suma</th>
+                <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Estaban el mes anterior y ya no aparecen">Se cerraron</th>
+                <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Total pendiente al final del mes (pasará al siguiente)">Pendiente</th>
+              </tr>
+            </thead>
+            <tbody>
+              {flowTable.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-8 text-muted-foreground/50">Sin datos.</td></tr>
+              ) : (
+                [...flowTable].reverse().map(row => (
+                  <tr key={row.key} className="border-b border-border/50 hover:bg-accent/30">
+                    <td className="p-2.5 font-semibold">{row.label}</td>
+                    <td className="p-2.5 text-right text-muted-foreground">{fmtInt(row.entramos)}</td>
+                    <td className="p-2.5 text-right text-primary font-semibold">+{fmtInt(row.entraron)}</td>
+                    <td className="p-2.5 text-right font-semibold">{fmtInt(row.suma)}</td>
+                    <td className="p-2.5 text-right text-success font-semibold">-{fmtInt(row.cerraron)}</td>
+                    <td className="p-2.5 text-right">
+                      <span className="inline-block px-2 py-0.5 rounded-md bg-primary/10 text-primary font-bold">{fmtInt(row.pendiente)}</span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Tech ranking */}
