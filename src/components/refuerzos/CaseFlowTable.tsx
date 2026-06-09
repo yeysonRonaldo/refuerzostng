@@ -17,40 +17,50 @@ export default function CaseFlowTable() {
       return true;
     });
 
-    const byMonth = new Map<string, Set<string>>();
+    // Por mes: lista de registros (servicios) y set de claves cliente|plaga (para detectar carryover)
+    interface MonthData { records: { key: string }[]; keys: Set<string> }
+    const byMonth = new Map<string, MonthData>();
     scoped.forEach(r => {
       if (!r.dateObj || !r.cliente) return;
       const p = buildCombinedPest(r, getPestName);
       if (p === '---') return;
-      const key = `${r.dateObj.getUTCFullYear()}-${String(r.dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
-      let set = byMonth.get(key);
-      if (!set) { set = new Set(); byMonth.set(key, set); }
-      set.add(`${r.cliente}|${p}`);
+      const monthKey = `${r.dateObj.getUTCFullYear()}-${String(r.dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
+      let data = byMonth.get(monthKey);
+      if (!data) { data = { records: [], keys: new Set() }; byMonth.set(monthKey, data); }
+      const caseKey = `${r.cliente}|${p}`;
+      data.records.push({ key: caseKey });
+      data.keys.add(caseKey);
     });
 
     const sortedKeys = Array.from(byMonth.keys()).sort();
-    const historyBefore = new Set<string>(); // todos los casos vistos antes del mes en curso
+    const historyBefore = new Set<string>(); // claves vistas en meses previos
+    const empty: MonthData = { records: [], keys: new Set() };
+
     return sortedKeys.map((k) => {
       const curr = byMonth.get(k)!;
-      // Use the literal previous calendar month, not just the prior key with data.
+      // Mes calendario anterior (literal)
       const [yStr, mStr] = k.split('-');
       const y = parseInt(yStr, 10);
       const m = parseInt(mStr, 10);
       const prevY = m === 1 ? y - 1 : y;
       const prevM = m === 1 ? 12 : m - 1;
       const prevKey = `${prevY}-${String(prevM).padStart(2, '0')}`;
-      const prev = byMonth.get(prevKey) ?? new Set<string>();
+      const prev = byMonth.get(prevKey) ?? empty;
+
+      // Conteo por REGISTROS (servicios)
       let entraron = 0, nuevos = 0, reaparecidos = 0;
-      curr.forEach(x => {
-        if (!prev.has(x)) {
+      curr.records.forEach(rec => {
+        if (!prev.keys.has(rec.key)) {
           entraron++;
-          if (historyBefore.has(x)) reaparecidos++;
+          if (historyBefore.has(rec.key)) reaparecidos++;
           else nuevos++;
         }
       });
       let cerraron = 0;
-      prev.forEach(x => { if (!curr.has(x)) cerraron++; });
-      const entramos = prev.size;
+      prev.records.forEach(rec => { if (!curr.keys.has(rec.key)) cerraron++; });
+
+      const entramos = prev.records.length;
+      const pendiente = curr.records.length;
       const row = {
         key: k,
         label: `${MONTH_NAMES[m - 1]} ${y}`,
@@ -60,9 +70,9 @@ export default function CaseFlowTable() {
         reaparecidos,
         suma: entramos + entraron,
         cerraron,
-        pendiente: curr.size,
+        pendiente,
       };
-      curr.forEach(x => historyBefore.add(x));
+      curr.keys.forEach(x => historyBefore.add(x));
       return row;
     });
   }, [processedData, getPestName, yearFilter, techFilter]);
@@ -75,7 +85,7 @@ export default function CaseFlowTable() {
           <ArrowLeftRight className="w-4 h-4 text-primary" /> Flujo de Casos por Mes
         </h3>
         <p className="text-[11px] text-muted-foreground mt-1">
-          Casos únicos (cliente + plaga). El <strong>Pendiente</strong> de un mes pasa como <strong>Entramos con</strong> al siguiente.
+          Registros (servicios) del mes. El <strong>Pendiente</strong> de un mes pasa como <strong>Entramos con</strong> al siguiente.
         </p>
       </div>
       <div className="max-h-[480px] overflow-auto">
