@@ -51,10 +51,9 @@ export default function CaseFlowTable() {
       let cerraron = 0;
       prev.forEach(x => { if (!curr.has(x)) cerraron++; });
       const entramos = prev.size;
-      const [y, m] = k.split('-');
       const row = {
         key: k,
-        label: `${MONTH_NAMES[parseInt(m) - 1]} ${y}`,
+        label: `${MONTH_NAMES[m - 1]} ${y}`,
         entramos,
         entraron,
         nuevos,
