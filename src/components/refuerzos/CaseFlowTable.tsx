@@ -30,9 +30,16 @@ export default function CaseFlowTable() {
 
     const sortedKeys = Array.from(byMonth.keys()).sort();
     const historyBefore = new Set<string>(); // todos los casos vistos antes del mes en curso
-    return sortedKeys.map((k, i) => {
+    return sortedKeys.map((k) => {
       const curr = byMonth.get(k)!;
-      const prev = i > 0 ? byMonth.get(sortedKeys[i - 1])! : new Set<string>();
+      // Use the literal previous calendar month, not just the prior key with data.
+      const [yStr, mStr] = k.split('-');
+      const y = parseInt(yStr, 10);
+      const m = parseInt(mStr, 10);
+      const prevY = m === 1 ? y - 1 : y;
+      const prevM = m === 1 ? 12 : m - 1;
+      const prevKey = `${prevY}-${String(prevM).padStart(2, '0')}`;
+      const prev = byMonth.get(prevKey) ?? new Set<string>();
       let entraron = 0, nuevos = 0, reaparecidos = 0;
       curr.forEach(x => {
         if (!prev.has(x)) {
