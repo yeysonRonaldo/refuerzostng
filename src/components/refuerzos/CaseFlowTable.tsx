@@ -91,7 +91,7 @@ export default function CaseFlowTable() {
           <ArrowLeftRight className="w-4 h-4 text-primary" /> Flujo de Casos por Mes
         </h3>
         <p className="text-[11px] text-muted-foreground mt-1">
-          El <strong>Pendiente</strong> es el mismo total mensual de la gráfica. Se separa en <strong>Nuevos</strong>, <strong>Arrastrados</strong> y <strong>Reaparecidos</strong>.
+          El <strong>Pendiente</strong> es el mismo total mensual de la gráfica. <strong>Nuevos + Reaparecidos</strong> son los que ingresaron al flujo este mes.
         </p>
       </div>
       <div className="max-h-[480px] overflow-auto">
@@ -100,27 +100,26 @@ export default function CaseFlowTable() {
             <tr className="text-left">
               <th className="p-2.5 font-semibold text-muted-foreground">Mes</th>
               <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Pendientes que venían del mes anterior">Entramos con</th>
-              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Total de registros del mes, igual que la línea Total de la gráfica">Total mes</th>
-              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Nunca antes vistos en la historia">Nuevos</th>
-              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Ya venían desde el mes anterior">Arrastrados</th>
-              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Ya existieron antes pero no el mes pasado">Reaparecidos</th>
-              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Entramos con + Nuevos + Reaparecidos, sin duplicar los arrastrados">A controlar</th>
+              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Nuevos (nunca antes vistos) + Reaparecidos (ya existieron antes pero no el mes pasado)">Nuevos + Reaparecidos</th>
+              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Entramos con + Nuevos + Reaparecidos">A controlar</th>
               <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Estaban antes y ya no aparecen">Se cerraron</th>
               <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Pasará como 'Entramos con' al próximo mes">Pendiente</th>
             </tr>
           </thead>
           <tbody>
             {flow.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-8 text-muted-foreground/50">Sin datos.</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-muted-foreground/50">Sin datos.</td></tr>
             ) : (
               [...flow].reverse().map(row => (
                 <tr key={row.key} className="border-b border-border/50 hover:bg-accent/30">
                   <td className="p-2.5 font-semibold">{row.label}</td>
                   <td className="p-2.5 text-right text-muted-foreground">{fmtInt(row.entramos)}</td>
-                  <td className="p-2.5 text-right text-primary font-semibold">{fmtInt(row.entraron)}</td>
-                  <td className="p-2.5 text-right text-info font-semibold">{fmtInt(row.nuevos)}</td>
-                  <td className="p-2.5 text-right text-muted-foreground font-semibold">{fmtInt(row.arrastrados)}</td>
-                  <td className="p-2.5 text-right text-warning font-semibold">{fmtInt(row.reaparecidos)}</td>
+                  <td className="p-2.5 text-right text-info font-semibold">
+                    {fmtInt(row.nuevos + row.reaparecidos)}
+                    <span className="text-[10px] text-muted-foreground font-normal ml-1">
+                      ({fmtInt(row.nuevos)}+{fmtInt(row.reaparecidos)})
+                    </span>
+                  </td>
                   <td className="p-2.5 text-right font-semibold">{fmtInt(row.suma)}</td>
                   <td className="p-2.5 text-right text-success font-semibold">-{fmtInt(row.cerraron)}</td>
                   <td className="p-2.5 text-right">
