@@ -111,14 +111,15 @@ export default function CaseFlowTable() {
           </thead>
           <tbody>
             {flow.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-8 text-muted-foreground/50">Sin datos.</td></tr>
+              <tr><td colSpan={9} className="text-center py-8 text-muted-foreground/50">Sin datos.</td></tr>
             ) : (
               [...flow].reverse().map(row => (
                 <tr key={row.key} className="border-b border-border/50 hover:bg-accent/30">
                   <td className="p-2.5 font-semibold">{row.label}</td>
                   <td className="p-2.5 text-right text-muted-foreground">{fmtInt(row.entramos)}</td>
-                  <td className="p-2.5 text-right text-primary font-semibold">+{fmtInt(row.entraron)}</td>
+                  <td className="p-2.5 text-right text-primary font-semibold">{fmtInt(row.entraron)}</td>
                   <td className="p-2.5 text-right text-info font-semibold">{fmtInt(row.nuevos)}</td>
+                  <td className="p-2.5 text-right text-muted-foreground font-semibold">{fmtInt(row.arrastrados)}</td>
                   <td className="p-2.5 text-right text-warning font-semibold">{fmtInt(row.reaparecidos)}</td>
                   <td className="p-2.5 text-right font-semibold">{fmtInt(row.suma)}</td>
                   <td className="p-2.5 text-right text-success font-semibold">-{fmtInt(row.cerraron)}</td>
