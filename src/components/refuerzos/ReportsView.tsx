@@ -230,6 +230,8 @@ export default function ReportsView() {
           </div>
         </div>
 
+        ${buildCaseFlowTable()}
+
         <div style="margin-top:30px;padding-top:15px;border-top:2px solid #e2e8f0;text-align:center;font-size:0.75rem;color:#94a3b8;">
           Reporte generado automáticamente — ${today}
         </div>
