@@ -5,6 +5,7 @@ import PestTrendChart from './PestTrendChart';
 import PriorityList from './PriorityList';
 import BarChart from './BarChart';
 import ClientGroupSummary from './ClientGroupSummary';
+import CaseFlowTable from './CaseFlowTable';
 import { useAppContext } from '@/context/AppContext';
 
 export default function MetricsView() {
@@ -23,6 +24,10 @@ export default function MetricsView() {
       {/* Row 3 - Big charts (full width each) */}
       <PestTrendChart />
       <SeverityLineChart />
+
+      {/* Flow table */}
+      <CaseFlowTable />
+
 
       {/* Row 4 - Summaries */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
