@@ -29,26 +29,38 @@ export default function CaseFlowTable() {
     });
 
     const sortedKeys = Array.from(byMonth.keys()).sort();
+    const historyBefore = new Set<string>(); // todos los casos vistos antes del mes en curso
     return sortedKeys.map((k, i) => {
       const curr = byMonth.get(k)!;
       const prev = i > 0 ? byMonth.get(sortedKeys[i - 1])! : new Set<string>();
-      let entraron = 0;
-      curr.forEach(x => { if (!prev.has(x)) entraron++; });
+      let entraron = 0, nuevos = 0, reaparecidos = 0;
+      curr.forEach(x => {
+        if (!prev.has(x)) {
+          entraron++;
+          if (historyBefore.has(x)) reaparecidos++;
+          else nuevos++;
+        }
+      });
       let cerraron = 0;
       prev.forEach(x => { if (!curr.has(x)) cerraron++; });
       const entramos = prev.size;
       const [y, m] = k.split('-');
-      return {
+      const row = {
         key: k,
         label: `${MONTH_NAMES[parseInt(m) - 1]} ${y}`,
         entramos,
         entraron,
+        nuevos,
+        reaparecidos,
         suma: entramos + entraron,
         cerraron,
         pendiente: curr.size,
       };
+      curr.forEach(x => historyBefore.add(x));
+      return row;
     });
   }, [processedData, getPestName, yearFilter, techFilter]);
+
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
@@ -66,7 +78,9 @@ export default function CaseFlowTable() {
             <tr className="text-left">
               <th className="p-2.5 font-semibold text-muted-foreground">Mes</th>
               <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Pendientes que venían del mes anterior">Entramos con</th>
-              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Casos nuevos este mes">Entraron</th>
+              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Casos de este mes que NO estaban el mes anterior (nuevos + reaparecidos)">Entraron</th>
+              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Nunca antes vistos en la historia">Nuevos</th>
+              <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Ya existieron antes pero no el mes pasado">Reaparecidos</th>
               <th className="p-2.5 font-semibold text-muted-foreground text-right">Suma</th>
               <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Estaban antes y ya no aparecen">Se cerraron</th>
               <th className="p-2.5 font-semibold text-muted-foreground text-right" title="Pasará como 'Entramos con' al próximo mes">Pendiente</th>
@@ -74,13 +88,15 @@ export default function CaseFlowTable() {
           </thead>
           <tbody>
             {flow.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-8 text-muted-foreground/50">Sin datos.</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-muted-foreground/50">Sin datos.</td></tr>
             ) : (
               [...flow].reverse().map(row => (
                 <tr key={row.key} className="border-b border-border/50 hover:bg-accent/30">
                   <td className="p-2.5 font-semibold">{row.label}</td>
                   <td className="p-2.5 text-right text-muted-foreground">{fmtInt(row.entramos)}</td>
                   <td className="p-2.5 text-right text-primary font-semibold">+{fmtInt(row.entraron)}</td>
+                  <td className="p-2.5 text-right text-info font-semibold">{fmtInt(row.nuevos)}</td>
+                  <td className="p-2.5 text-right text-warning font-semibold">{fmtInt(row.reaparecidos)}</td>
                   <td className="p-2.5 text-right font-semibold">{fmtInt(row.suma)}</td>
                   <td className="p-2.5 text-right text-success font-semibold">-{fmtInt(row.cerraron)}</td>
                   <td className="p-2.5 text-right">
