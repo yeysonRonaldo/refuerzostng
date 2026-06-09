@@ -329,39 +329,6 @@ export default function MonthlyProjectionView() {
     });
   }, [currentMonth, monthOptions, buildStats]);
 
-  // ----- Flow table (pendientes / entraron / cerraron) for every month -----
-  const flowTable = useMemo(() => {
-    const sortedKeys = [...monthOptions].sort(); // ascending chronological
-    const keysPerMonth = sortedKeys.map(k => {
-      const recs = recordsByMonth.get(k) ?? [];
-      const set = new Set<string>();
-      recs.forEach(r => {
-        if (!r.cliente) return;
-        const p = buildCombinedPest(r, getPestName);
-        if (p === '---') return;
-        set.add(`${r.cliente}|${p}`);
-      });
-      return { key: k, set };
-    });
-    return keysPerMonth.map((entry, i) => {
-      const prev = i > 0 ? keysPerMonth[i - 1].set : new Set<string>();
-      const curr = entry.set;
-      let entraron = 0, persistentes = 0;
-      curr.forEach(k => { if (prev.has(k)) persistentes++; else entraron++; });
-      let cerraron = 0;
-      prev.forEach(k => { if (!curr.has(k)) cerraron++; });
-      const entramos = prev.size;
-      const suma = entramos + entraron;
-      const pendiente = curr.size; // = persistentes + entraron = suma - cerraron
-      const [y, m] = entry.key.split('-');
-      return {
-        key: entry.key,
-        label: `${MONTH_NAMES[parseInt(m) - 1]} ${y}`,
-        entramos, entraron, suma, cerraron, pendiente, persistentes,
-      };
-    });
-  }, [monthOptions, recordsByMonth, getPestName]);
-
   // Insights
   const insights = useMemo(() => {
     const out: { tone: 'good' | 'bad' | 'info'; text: string }[] = [];
