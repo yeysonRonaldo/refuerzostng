@@ -85,7 +85,7 @@ export default function CaseFlowTable() {
           <ArrowLeftRight className="w-4 h-4 text-primary" /> Flujo de Casos por Mes
         </h3>
         <p className="text-[11px] text-muted-foreground mt-1">
-          Casos únicos (cliente + plaga). El <strong>Pendiente</strong> de un mes pasa como <strong>Entramos con</strong> al siguiente.
+          Registros (servicios) del mes. El <strong>Pendiente</strong> de un mes pasa como <strong>Entramos con</strong> al siguiente.
         </p>
       </div>
       <div className="max-h-[480px] overflow-auto">
