@@ -2,6 +2,9 @@ import { useState, useMemo, useRef } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Eye, Printer } from 'lucide-react';
 import { toast } from 'sonner';
+import { buildCombinedPest } from '@/lib/pestUtils';
+
+const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 const MONTH_NAMES_FULL = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
