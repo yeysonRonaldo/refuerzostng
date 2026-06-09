@@ -25,6 +25,10 @@ export default function MetricsView() {
       <PestTrendChart />
       <SeverityLineChart />
 
+      {/* Flow table */}
+      <CaseFlowTable />
+
+
       {/* Row 4 - Summaries */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ClientGroupSummary />
