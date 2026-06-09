@@ -29,26 +29,38 @@ export default function CaseFlowTable() {
     });
 
     const sortedKeys = Array.from(byMonth.keys()).sort();
+    const historyBefore = new Set<string>(); // todos los casos vistos antes del mes en curso
     return sortedKeys.map((k, i) => {
       const curr = byMonth.get(k)!;
       const prev = i > 0 ? byMonth.get(sortedKeys[i - 1])! : new Set<string>();
-      let entraron = 0;
-      curr.forEach(x => { if (!prev.has(x)) entraron++; });
+      let entraron = 0, nuevos = 0, reaparecidos = 0;
+      curr.forEach(x => {
+        if (!prev.has(x)) {
+          entraron++;
+          if (historyBefore.has(x)) reaparecidos++;
+          else nuevos++;
+        }
+      });
       let cerraron = 0;
       prev.forEach(x => { if (!curr.has(x)) cerraron++; });
       const entramos = prev.size;
       const [y, m] = k.split('-');
-      return {
+      const row = {
         key: k,
         label: `${MONTH_NAMES[parseInt(m) - 1]} ${y}`,
         entramos,
         entraron,
+        nuevos,
+        reaparecidos,
         suma: entramos + entraron,
         cerraron,
         pendiente: curr.size,
       };
+      curr.forEach(x => historyBefore.add(x));
+      return row;
     });
   }, [processedData, getPestName, yearFilter, techFilter]);
+
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
