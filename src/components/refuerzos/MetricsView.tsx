@@ -5,6 +5,7 @@ import PestTrendChart from './PestTrendChart';
 import PriorityList from './PriorityList';
 import BarChart from './BarChart';
 import ClientGroupSummary from './ClientGroupSummary';
+import CaseFlowTable from './CaseFlowTable';
 import { useAppContext } from '@/context/AppContext';
 
 export default function MetricsView() {
