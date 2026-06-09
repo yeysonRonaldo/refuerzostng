@@ -113,6 +113,87 @@ export default function ReportsView() {
 
     const totalRegistros = metrics.total;
 
+    // === Case Flow Table (same logic as CaseFlowTable component) ===
+    const buildCaseFlowTable = () => {
+      const scoped = processedData.filter(r => {
+        if (!r.dateObj) return false;
+        if (techFilter !== 'all' && r.tecnico !== techFilter) return false;
+        if (yearFilter !== 'all' && r.dateObj.getUTCFullYear().toString() !== yearFilter) return false;
+        return true;
+      });
+      interface MonthData { records: { key: string }[]; keys: Set<string> }
+      const byMonth = new Map<string, MonthData>();
+      scoped.forEach(r => {
+        if (!r.dateObj) return;
+        const p = buildCombinedPest(r, getPestName);
+        const mk = `${r.dateObj.getUTCFullYear()}-${String(r.dateObj.getUTCMonth() + 1).padStart(2, '0')}`;
+        let data = byMonth.get(mk);
+        if (!data) { data = { records: [], keys: new Set() }; byMonth.set(mk, data); }
+        const ck = (r.idCliente || r.codigoCliente || r.cliente || r._dedupeKey || r.id || 'sin-cliente').trim().toLowerCase();
+        const pk = p && p !== '---' ? p : (r.plaga || 'sin-plaga');
+        const key = `${ck}|${pk}`.toLowerCase();
+        data.records.push({ key });
+        data.keys.add(key);
+      });
+      const sortedKeys = Array.from(byMonth.keys()).sort();
+      if (sortedKeys.length === 0) return '';
+      const history = new Set<string>();
+      const empty: MonthData = { records: [], keys: new Set() };
+      const rows = sortedKeys.map(k => {
+        const curr = byMonth.get(k)!;
+        const [yStr, mStr] = k.split('-');
+        const y = parseInt(yStr, 10), m = parseInt(mStr, 10);
+        const prevKey = `${m === 1 ? y - 1 : y}-${String(m === 1 ? 12 : m - 1).padStart(2, '0')}`;
+        const prev = byMonth.get(prevKey) ?? empty;
+        let nuevos = 0, reaparecidos = 0;
+        curr.records.forEach(rec => {
+          if (prev.keys.has(rec.key)) return;
+          if (history.has(rec.key)) reaparecidos++; else nuevos++;
+        });
+        const entramos = prev.records.length;
+        const pendiente = curr.records.length;
+        const suma = entramos + nuevos + reaparecidos;
+        const cerraron = Math.max(0, suma - pendiente);
+        curr.keys.forEach(x => history.add(x));
+        return { label: `${MONTH_NAMES[m - 1]} ${y}`, entramos, nuevos, reaparecidos, suma, cerraron, pendiente };
+      }).reverse();
+
+      const fmt = (n: number) => n.toLocaleString('es-ES');
+      const rowsHtml = rows.map(r => `
+        <tr>
+          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-weight:600;">${r.label}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:#64748b;">${fmt(r.entramos)}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:#0ea5e9;font-weight:600;">${fmt(r.nuevos + r.reaparecidos)} <span style="font-size:0.7rem;color:#94a3b8;font-weight:400;">(${fmt(r.nuevos)}+${fmt(r.reaparecidos)})</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;">${fmt(r.suma)}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:#22c55e;font-weight:600;">-${fmt(r.cerraron)}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;"><span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#dbeafe;color:#1d4ed8;font-weight:700;">${fmt(r.pendiente)}</span></td>
+        </tr>
+      `).join('');
+
+      return `
+        <div style="margin-top:25px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;page-break-inside:avoid;">
+          <div style="padding:14px 18px;border-bottom:1px solid #e2e8f0;">
+            <h2 style="margin:0;font-size:1rem;color:#1e293b;">Flujo de Casos por Mes</h2>
+            <p style="margin:4px 0 0;font-size:0.75rem;color:#64748b;">El <strong>Pendiente</strong> es el total mensual. <strong>Nuevos + Reaparecidos</strong> son los que ingresaron al flujo este mes.</p>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+            <thead style="background:#f8fafc;">
+              <tr style="text-align:left;">
+                <th style="padding:10px;color:#64748b;font-weight:600;">Mes</th>
+                <th style="padding:10px;color:#64748b;font-weight:600;text-align:right;">Entramos con</th>
+                <th style="padding:10px;color:#64748b;font-weight:600;text-align:right;">Nuevos + Reaparecidos</th>
+                <th style="padding:10px;color:#64748b;font-weight:600;text-align:right;">A controlar</th>
+                <th style="padding:10px;color:#64748b;font-weight:600;text-align:right;">Se cerraron</th>
+                <th style="padding:10px;color:#64748b;font-weight:600;text-align:right;">Pendiente</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      `;
+    };
+
+
     const html = `
       <div style="font-family:'Segoe UI',system-ui,sans-serif;max-width:1000px;margin:0 auto;padding:30px;">
         <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e293b;padding-bottom:15px;margin-bottom:25px;">
