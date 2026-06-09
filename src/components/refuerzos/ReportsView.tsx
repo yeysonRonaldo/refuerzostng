@@ -9,7 +9,7 @@ const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Jul
 const MONTH_NAMES_FULL = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
 export default function ReportsView() {
-  const { currentData, metrics, yearFilter, monthFilter, techFilter } = useAppContext();
+  const { processedData, currentData, metrics, getPestName, yearFilter, monthFilter, techFilter } = useAppContext();
   const [reportHtml, setReportHtml] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
