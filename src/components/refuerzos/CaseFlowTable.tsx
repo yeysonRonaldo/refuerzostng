@@ -7,7 +7,16 @@ const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Jul
 const fmtInt = (n: number) => Math.round(n).toLocaleString('es-ES');
 
 export default function CaseFlowTable() {
-  const { processedData, getPestName, yearFilter, techFilter } = useAppContext();
+  const { processedData, getPestName, yearFilter, techFilter, handleDrillDown } = useAppContext();
+
+  const prevMonthKey = (k: string) => {
+    const [yStr, mStr] = k.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const py = m === 1 ? y - 1 : y;
+    const pm = m === 1 ? 12 : m - 1;
+    return `${py}-${String(pm).padStart(2, '0')}`;
+  };
 
   const flow = useMemo(() => {
     const scoped = processedData.filter(r => {
@@ -110,23 +119,40 @@ export default function CaseFlowTable() {
             {flow.length === 0 ? (
               <tr><td colSpan={6} className="text-center py-8 text-muted-foreground/50">Sin datos.</td></tr>
             ) : (
-              [...flow].reverse().map(row => (
-                <tr key={row.key} className="border-b border-border/50 hover:bg-accent/30">
-                  <td className="p-2.5 font-semibold">{row.label}</td>
-                  <td className="p-2.5 text-right text-muted-foreground">{fmtInt(row.entramos)}</td>
-                  <td className="p-2.5 text-right text-info font-semibold">
-                    {fmtInt(row.nuevos + row.reaparecidos)}
-                    <span className="text-[10px] text-muted-foreground font-normal ml-1">
-                      ({fmtInt(row.nuevos)}+{fmtInt(row.reaparecidos)})
-                    </span>
-                  </td>
-                  <td className="p-2.5 text-right font-semibold">{fmtInt(row.suma)}</td>
-                  <td className="p-2.5 text-right text-success font-semibold">-{fmtInt(row.cerraron)}</td>
-                  <td className="p-2.5 text-right">
-                    <span className="inline-block px-2 py-0.5 rounded-md bg-primary/10 text-primary font-bold">{fmtInt(row.pendiente)}</span>
-                  </td>
-                </tr>
-              ))
+              [...flow].reverse().map(row => {
+                const prev = prevMonthKey(row.key);
+                const cellCls = "p-2.5 text-right cursor-pointer hover:underline";
+                return (
+                  <tr key={row.key} className="border-b border-border/50 hover:bg-accent/30">
+                    <td
+                      className="p-2.5 font-semibold cursor-pointer hover:underline"
+                      onClick={() => handleDrillDown('flow-month', row.key, 'curr')}
+                    >{row.label}</td>
+                    <td
+                      className={`${cellCls} text-muted-foreground`}
+                      onClick={() => handleDrillDown('flow-month', prev, 'curr')}
+                    >{fmtInt(row.entramos)}</td>
+                    <td
+                      className={`${cellCls} text-info font-semibold`}
+                      onClick={() => handleDrillDown('flow-month', row.key, 'new_reap')}
+                    >{fmtInt(row.nuevos + row.reaparecidos)}</td>
+                    <td
+                      className={`${cellCls} font-semibold`}
+                      onClick={() => handleDrillDown('flow-month', row.key, 'a_controlar')}
+                    >{fmtInt(row.suma)}</td>
+                    <td
+                      className={`${cellCls} text-success font-semibold`}
+                      onClick={() => handleDrillDown('flow-month', row.key, 'closed')}
+                    >-{fmtInt(row.cerraron)}</td>
+                    <td
+                      className="p-2.5 text-right cursor-pointer"
+                      onClick={() => handleDrillDown('flow-month', row.key, 'curr')}
+                    >
+                      <span className="inline-block px-2 py-0.5 rounded-md bg-primary/10 text-primary font-bold hover:bg-primary/20">{fmtInt(row.pendiente)}</span>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

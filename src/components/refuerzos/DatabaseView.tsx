@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { RefuerzoRecord } from '@/types/refuerzos';
+import { buildCombinedPest } from '@/lib/pestUtils';
 import { toast } from 'sonner';
 
 const ROWS_PER_PAGE = 100;
@@ -40,7 +41,7 @@ function EditableCell({ value, onSave }: { value: string; onSave: (v: string) =>
 }
 
 export default function DatabaseView() {
-  const { currentData, drillDownFilter, setDrillDownFilter, getPestName, handleDrillDown, updateRecordField, reparseDates } = useAppContext();
+  const { currentData, processedData, drillDownFilter, setDrillDownFilter, getPestName, handleDrillDown, updateRecordField, reparseDates } = useAppContext();
   const [page, setPage] = useState(1);
   const [tableFilters, setTableFilters] = useState<Record<string, string>>({});
   const [sortConfig, setSortConfig] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
@@ -79,34 +80,76 @@ export default function DatabaseView() {
   }, []);
 
   const filteredData = useMemo(() => {
-    let data = [...currentData];
+    const isFlow = drillDownFilter?.type === 'flow-month';
+    let data = isFlow ? [...processedData] : [...currentData];
 
     // Drill-down filter
     if (drillDownFilter) {
       const { type, value, extra } = drillDownFilter;
-      data = data.filter(d => {
-        const effectivePlaga = getPestName(d.plaga);
-        if (type === 'gravedad') return d.gravedad === value;
-        if (type === 'plaga') return effectivePlaga === value;
-        if (type === 'tecnico') return (d.tecnico || '').includes(value);
-        if (type === 'cliente') return d.cliente === value;
-        if (type === 'priority') return d.diasActivos > 15;
-        if (type === 'pest-trend') {
-          if (!d.dateObj) return false;
-          const key = getRecordMonthKey(d.dateObj);
-          return key === value && effectivePlaga === extra;
+
+      if (type === 'flow-month') {
+        // Build case-key map by month using the same logic as CaseFlowTable
+        const caseKeyOf = (r: RefuerzoRecord) => {
+          const p = buildCombinedPest(r, getPestName);
+          const ck = (r.idCliente || r.codigoCliente || r.cliente || r._dedupeKey || r.id || 'sin-cliente').trim().toLowerCase();
+          const pk = p && p !== '---' ? p : (r.plaga || 'sin-plaga');
+          return `${ck}|${pk}`.toLowerCase();
+        };
+        const byMonth = new Map<string, { records: RefuerzoRecord[]; keys: Set<string> }>();
+        processedData.forEach(r => {
+          if (!r.dateObj) return;
+          const mk = getRecordMonthKey(r.dateObj);
+          let bucket = byMonth.get(mk);
+          if (!bucket) { bucket = { records: [], keys: new Set() }; byMonth.set(mk, bucket); }
+          bucket.records.push(r);
+          bucket.keys.add(caseKeyOf(r));
+        });
+        const [yStr, mStr] = value.split('-');
+        const y = parseInt(yStr, 10), m = parseInt(mStr, 10);
+        const prevY = m === 1 ? y - 1 : y;
+        const prevM = m === 1 ? 12 : m - 1;
+        const prevKey = `${prevY}-${String(prevM).padStart(2, '0')}`;
+        const curr = byMonth.get(value) ?? { records: [], keys: new Set<string>() };
+        const prev = byMonth.get(prevKey) ?? { records: [], keys: new Set<string>() };
+
+        if (extra === 'curr') {
+          data = curr.records;
+        } else if (extra === 'new_reap') {
+          // records this month whose key was not in previous month
+          data = curr.records.filter(r => !prev.keys.has(caseKeyOf(r)));
+        } else if (extra === 'closed') {
+          // previous-month records whose key does not appear this month
+          data = prev.records.filter(r => !curr.keys.has(caseKeyOf(r)));
+        } else if (extra === 'a_controlar') {
+          data = [...prev.records, ...curr.records];
+        } else {
+          data = curr.records;
         }
-        if (type === 'timeline') {
-          if (!d.dateObj) return false;
-          const key = getRecordMonthKey(d.dateObj);
-          if (extra === 'total') return key === value;
-          const gravMatch = (extra === 'alto' && d.gravedad === 'Alto') ||
-            (extra === 'medio' && d.gravedad === 'Medio') ||
-            (extra === 'bajo' && d.gravedad !== 'Alto' && d.gravedad !== 'Medio');
-          return key === value && gravMatch;
-        }
-        return true;
-      });
+      } else {
+        data = data.filter(d => {
+          const effectivePlaga = getPestName(d.plaga);
+          if (type === 'gravedad') return d.gravedad === value;
+          if (type === 'plaga') return effectivePlaga === value;
+          if (type === 'tecnico') return (d.tecnico || '').includes(value);
+          if (type === 'cliente') return d.cliente === value;
+          if (type === 'priority') return d.diasActivos > 15;
+          if (type === 'pest-trend') {
+            if (!d.dateObj) return false;
+            const key = getRecordMonthKey(d.dateObj);
+            return key === value && effectivePlaga === extra;
+          }
+          if (type === 'timeline') {
+            if (!d.dateObj) return false;
+            const key = getRecordMonthKey(d.dateObj);
+            if (extra === 'total') return key === value;
+            const gravMatch = (extra === 'alto' && d.gravedad === 'Alto') ||
+              (extra === 'medio' && d.gravedad === 'Medio') ||
+              (extra === 'bajo' && d.gravedad !== 'Alto' && d.gravedad !== 'Medio');
+            return key === value && gravMatch;
+          }
+          return true;
+        });
+      }
     }
 
     // Table column filters
@@ -138,7 +181,7 @@ export default function DatabaseView() {
     }
 
     return data;
-  }, [currentData, drillDownFilter, tableFilters, sortConfig, getPestName]);
+  }, [currentData, processedData, drillDownFilter, tableFilters, sortConfig, getPestName]);
 
   const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
   const pageData = filteredData.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
@@ -152,6 +195,15 @@ export default function DatabaseView() {
     if (type === 'cliente') return `Cliente: ${value}`;
     if (type === 'pest-trend') return `${extra} en ${value}`;
     if (type === 'timeline') return `${extra} en ${value}`;
+    if (type === 'flow-month') {
+      const map: Record<string, string> = {
+        curr: 'Registros del mes',
+        new_reap: 'Nuevos + Reaparecidos',
+        closed: 'Se cerraron',
+        a_controlar: 'A controlar',
+      };
+      return `${map[extra || 'curr'] || 'Flujo'} — ${value}`;
+    }
     return '';
   };
 
