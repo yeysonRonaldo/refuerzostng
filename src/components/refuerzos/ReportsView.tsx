@@ -3,13 +3,14 @@ import { useAppContext } from '@/context/AppContext';
 import { Eye, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { buildCombinedPest } from '@/lib/pestUtils';
+import { PEST_COLORS } from '@/lib/pestColors';
 
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 const MONTH_NAMES_FULL = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
 export default function ReportsView() {
-  const { processedData, currentData, metrics, getPestName, yearFilter, monthFilter, techFilter } = useAppContext();
+  const { processedData, currentData, metrics, getPestName, yearFilter, monthFilter, techFilter, selectedPests } = useAppContext();
   const [reportHtml, setReportHtml] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -193,6 +194,77 @@ export default function ReportsView() {
       `;
     };
 
+    // === Pest Trend Table (matches PestTrendTable component) ===
+    const buildPestTrendTable = () => {
+      if (!metrics || selectedPests.length === 0) return '';
+      const rows = Object.values(metrics.pestTrend).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+      if (rows.length === 0) return '';
+
+      const fmt = (n: number) => n.toLocaleString('es-ES');
+      const headerCells = selectedPests.map((p, idx) => {
+        const color = PEST_COLORS[idx % PEST_COLORS.length];
+        return `<th style="padding:8px 10px;text-align:center;font-weight:700;color:${color};white-space:nowrap;border-bottom:1px solid #e2e8f0;">${p}</th>`;
+      }).join('');
+
+      const bodyRows = rows.map(d => {
+        const rowTotal = selectedPests.reduce((sum, p) => sum + (d.counts[p] || 0), 0);
+        const cells = selectedPests.map((p, idx) => {
+          const v = d.counts[p] || 0;
+          const color = PEST_COLORS[idx % PEST_COLORS.length];
+          const style = v > 0
+            ? `color:${color};font-weight:600;`
+            : `color:#cbd5e1;`;
+          return `<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #f1f5f9;${style}">${fmt(v)}</td>`;
+        }).join('');
+        return `
+          <tr>
+            <td style="padding:7px 10px;font-weight:600;color:#1e293b;border-bottom:1px solid #f1f5f9;white-space:nowrap;">${d.label}</td>
+            ${cells}
+            <td style="padding:7px 10px;text-align:center;font-weight:700;color:#1e293b;border-bottom:1px solid #f1f5f9;">${fmt(rowTotal)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Column totals
+      const colTotals = selectedPests.map(p =>
+        rows.reduce((s, r) => s + (r.counts[p] || 0), 0)
+      );
+      const grandTotal = colTotals.reduce((a, b) => a + b, 0);
+      const totalCells = selectedPests.map((_, idx) => {
+        const color = PEST_COLORS[idx % PEST_COLORS.length];
+        return `<td style="padding:8px 10px;text-align:center;font-weight:700;color:${color};">${fmt(colTotals[idx])}</td>`;
+      }).join('');
+
+      return `
+        <div style="margin-top:25px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;page-break-inside:avoid;">
+          <div style="padding:14px 18px;border-bottom:1px solid #e2e8f0;">
+            <h2 style="margin:0;font-size:1rem;color:#1e293b;">Tendencia por Tipo de Plaga</h2>
+            <p style="margin:4px 0 0;font-size:0.75rem;color:#64748b;">Conteo mensual por plaga seleccionada.</p>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+              <thead style="background:#f8fafc;">
+                <tr>
+                  <th style="padding:8px 10px;text-align:left;font-weight:700;color:#64748b;border-bottom:1px solid #e2e8f0;">Periodo</th>
+                  ${headerCells}
+                  <th style="padding:8px 10px;text-align:center;font-weight:700;color:#1e293b;border-bottom:1px solid #e2e8f0;">Total</th>
+                </tr>
+              </thead>
+              <tbody>${bodyRows}</tbody>
+              <tfoot style="background:#f8fafc;">
+                <tr>
+                  <td style="padding:8px 10px;font-weight:700;color:#1e293b;">Total</td>
+                  ${totalCells}
+                  <td style="padding:8px 10px;text-align:center;font-weight:800;color:#1e293b;">${fmt(grandTotal)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      `;
+    };
+
+
 
     const html = `
       <div style="font-family:'Segoe UI',system-ui,sans-serif;max-width:1000px;margin:0 auto;padding:30px;">
@@ -231,6 +303,8 @@ export default function ReportsView() {
         </div>
 
         ${buildCaseFlowTable()}
+
+        ${buildPestTrendTable()}
 
         <div style="margin-top:30px;padding-top:15px;border-top:2px solid #e2e8f0;text-align:center;font-size:0.75rem;color:#94a3b8;">
           Reporte generado automáticamente — ${today}
