@@ -7,7 +7,16 @@ const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Jul
 const fmtInt = (n: number) => Math.round(n).toLocaleString('es-ES');
 
 export default function CaseFlowTable() {
-  const { processedData, getPestName, yearFilter, techFilter } = useAppContext();
+  const { processedData, getPestName, yearFilter, techFilter, handleDrillDown } = useAppContext();
+
+  const prevMonthKey = (k: string) => {
+    const [yStr, mStr] = k.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const py = m === 1 ? y - 1 : y;
+    const pm = m === 1 ? 12 : m - 1;
+    return `${py}-${String(pm).padStart(2, '0')}`;
+  };
 
   const flow = useMemo(() => {
     const scoped = processedData.filter(r => {
