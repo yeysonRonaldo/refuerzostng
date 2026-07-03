@@ -262,7 +262,9 @@ export default function ReportsView() {
                 <tr>
                   <td style="padding:8px 10px;font-weight:700;color:#1e293b;">Total</td>
                   ${totalCells}
+                  <td style="padding:8px 10px;text-align:center;font-weight:700;color:#64748b;">${fmt(otrosTotal)}</td>
                   <td style="padding:8px 10px;text-align:center;font-weight:800;color:#1e293b;">${fmt(grandTotal)}</td>
+
                 </tr>
               </tfoot>
             </table>
