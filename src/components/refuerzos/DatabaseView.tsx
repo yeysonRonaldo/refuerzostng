@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { RefuerzoRecord } from '@/types/refuerzos';
+import { buildCombinedPest } from '@/lib/pestUtils';
 import { toast } from 'sonner';
 
 const ROWS_PER_PAGE = 100;
