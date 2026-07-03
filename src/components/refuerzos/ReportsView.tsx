@@ -207,7 +207,9 @@ export default function ReportsView() {
       }).join('');
 
       const bodyRows = rows.map(d => {
-        const rowTotal = selectedPests.reduce((sum, p) => sum + (d.counts[p] || 0), 0);
+        const selectedSum = selectedPests.reduce((sum, p) => sum + (d.counts[p] || 0), 0);
+        const otros = d.counts['Otros'] || 0;
+        const rowTotal = selectedSum + otros;
         const cells = selectedPests.map((p, idx) => {
           const v = d.counts[p] || 0;
           const color = PEST_COLORS[idx % PEST_COLORS.length];
@@ -220,6 +222,7 @@ export default function ReportsView() {
           <tr>
             <td style="padding:7px 10px;font-weight:600;color:#1e293b;border-bottom:1px solid #f1f5f9;white-space:nowrap;">${d.label}</td>
             ${cells}
+            <td style="padding:7px 10px;text-align:center;border-bottom:1px solid #f1f5f9;color:#64748b;font-weight:600;">${fmt(otros)}</td>
             <td style="padding:7px 10px;text-align:center;font-weight:700;color:#1e293b;border-bottom:1px solid #f1f5f9;">${fmt(rowTotal)}</td>
           </tr>
         `;
@@ -229,11 +232,13 @@ export default function ReportsView() {
       const colTotals = selectedPests.map(p =>
         rows.reduce((s, r) => s + (r.counts[p] || 0), 0)
       );
-      const grandTotal = colTotals.reduce((a, b) => a + b, 0);
+      const otrosTotal = rows.reduce((s, r) => s + (r.counts['Otros'] || 0), 0);
+      const grandTotal = colTotals.reduce((a, b) => a + b, 0) + otrosTotal;
       const totalCells = selectedPests.map((_, idx) => {
         const color = PEST_COLORS[idx % PEST_COLORS.length];
         return `<td style="padding:8px 10px;text-align:center;font-weight:700;color:${color};">${fmt(colTotals[idx])}</td>`;
       }).join('');
+
 
       return `
         <div style="margin-top:25px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;page-break-inside:avoid;">
