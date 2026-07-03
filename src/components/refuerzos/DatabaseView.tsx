@@ -195,6 +195,15 @@ export default function DatabaseView() {
     if (type === 'cliente') return `Cliente: ${value}`;
     if (type === 'pest-trend') return `${extra} en ${value}`;
     if (type === 'timeline') return `${extra} en ${value}`;
+    if (type === 'flow-month') {
+      const map: Record<string, string> = {
+        curr: 'Registros del mes',
+        new_reap: 'Nuevos + Reaparecidos',
+        closed: 'Se cerraron',
+        a_controlar: 'A controlar',
+      };
+      return `${map[extra || 'curr'] || 'Flujo'} — ${value}`;
+    }
     return '';
   };
 
