@@ -2,6 +2,7 @@ import InsightCard from './InsightCard';
 import StatsCards from './StatsCards';
 import SeverityLineChart from './SeverityLineChart';
 import PestTrendChart from './PestTrendChart';
+import PestTrendTable from './PestTrendTable';
 import PriorityList from './PriorityList';
 import BarChart from './BarChart';
 import ClientGroupSummary from './ClientGroupSummary';
@@ -23,6 +24,7 @@ export default function MetricsView() {
 
       {/* Row 3 - Big charts (full width each) */}
       <PestTrendChart />
+      <PestTrendTable />
       <SeverityLineChart />
 
       {/* Flow table */}
