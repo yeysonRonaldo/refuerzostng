@@ -24,6 +24,7 @@ export default function MetricsView() {
 
       {/* Row 3 - Big charts (full width each) */}
       <PestTrendChart />
+      <PestTrendTable />
       <SeverityLineChart />
 
       {/* Flow table */}
