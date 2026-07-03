@@ -2,6 +2,7 @@ import InsightCard from './InsightCard';
 import StatsCards from './StatsCards';
 import SeverityLineChart from './SeverityLineChart';
 import PestTrendChart from './PestTrendChart';
+import PestTrendTable from './PestTrendTable';
 import PriorityList from './PriorityList';
 import BarChart from './BarChart';
 import ClientGroupSummary from './ClientGroupSummary';
