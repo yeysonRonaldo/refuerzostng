@@ -252,7 +252,9 @@ export default function ReportsView() {
                 <tr>
                   <th style="padding:8px 10px;text-align:left;font-weight:700;color:#64748b;border-bottom:1px solid #e2e8f0;">Periodo</th>
                   ${headerCells}
+                  <th style="padding:8px 10px;text-align:center;font-weight:700;color:#64748b;border-bottom:1px solid #e2e8f0;">Otros</th>
                   <th style="padding:8px 10px;text-align:center;font-weight:700;color:#1e293b;border-bottom:1px solid #e2e8f0;">Total</th>
+
                 </tr>
               </thead>
               <tbody>${bodyRows}</tbody>
