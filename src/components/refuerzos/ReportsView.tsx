@@ -163,7 +163,7 @@ export default function ReportsView() {
         <tr>
           <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-weight:600;">${r.label}</td>
           <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:#64748b;">${fmt(r.entramos)}</td>
-          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:#0ea5e9;font-weight:600;">${fmt(r.nuevos + r.reaparecidos)} <span style="font-size:0.7rem;color:#94a3b8;font-weight:400;">(${fmt(r.nuevos)}+${fmt(r.reaparecidos)})</span></td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:#0ea5e9;font-weight:600;">${fmt(r.nuevos + r.reaparecidos)}</td>
           <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;">${fmt(r.suma)}</td>
           <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:#22c55e;font-weight:600;">-${fmt(r.cerraron)}</td>
           <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:right;"><span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#dbeafe;color:#1d4ed8;font-weight:700;">${fmt(r.pendiente)}</span></td>
