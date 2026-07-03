@@ -43,15 +43,18 @@ export default function PestTrendTable() {
                   {pest}
                 </th>
               ))}
+              <th className="p-2.5 font-bold text-center whitespace-nowrap text-muted-foreground">Otros</th>
               <th className="p-2.5 font-bold text-foreground text-center">Total</th>
             </tr>
           </thead>
           <tbody>
             {rows.map(d => {
-              const rowTotal = selectedPests.reduce(
+              const selectedSum = selectedPests.reduce(
                 (sum, p) => sum + (d.counts[p] || 0),
                 0
               );
+              const otros = d.counts['Otros'] || 0;
+              const rowTotal = selectedSum + otros;
               return (
                 <tr
                   key={d.sortKey}
@@ -82,6 +85,18 @@ export default function PestTrendTable() {
                   })}
                   <td
                     onClick={() =>
+                      otros > 0 && handleDrillDown('pest-trend', d.sortKey, 'Otros')
+                    }
+                    className={`p-2.5 text-center tabular-nums ${
+                      otros > 0
+                        ? 'cursor-pointer hover:underline font-medium text-muted-foreground'
+                        : 'text-muted-foreground/40'
+                    }`}
+                  >
+                    {fmt(otros)}
+                  </td>
+                  <td
+                    onClick={() =>
                       rowTotal > 0 &&
                       handleDrillDown('timeline', d.sortKey, 'total')
                     }
@@ -94,6 +109,7 @@ export default function PestTrendTable() {
                 </tr>
               );
             })}
+
           </tbody>
         </table>
       </div>
