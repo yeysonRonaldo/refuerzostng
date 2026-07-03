@@ -41,7 +41,7 @@ function EditableCell({ value, onSave }: { value: string; onSave: (v: string) =>
 }
 
 export default function DatabaseView() {
-  const { currentData, drillDownFilter, setDrillDownFilter, getPestName, handleDrillDown, updateRecordField, reparseDates } = useAppContext();
+  const { currentData, processedData, drillDownFilter, setDrillDownFilter, getPestName, handleDrillDown, updateRecordField, reparseDates } = useAppContext();
   const [page, setPage] = useState(1);
   const [tableFilters, setTableFilters] = useState<Record<string, string>>({});
   const [sortConfig, setSortConfig] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
